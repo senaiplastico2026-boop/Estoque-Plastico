@@ -1,0 +1,2750 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width,
+                 initial-scale=1.0,
+                 maximum-scale=1.0">
+
+    <title>
+        SENAI Plásticos - Gerenciamento de Plástico
+    </title>
+
+
+    <!-- =====================================================
+         FONTES
+    ====================================================== -->
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com">
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+        crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+
+    <!-- =====================================================
+         FONT AWESOME
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+
+    <!-- =====================================================
+         CSS
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="style.css">
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     LOGIN
+========================================================= -->
+
+<div
+    id="loginContainer"
+    class="login-container">
+
+
+    <div class="login-card">
+
+
+        <!-- =================================================
+             LOGO
+        ================================================== -->
+
+        <div class="logo-login">
+
+            <div class="logo-icon">
+
+                <i
+                    class="fas fa-industry">
+                </i>
+
+                <i
+                    class="fas fa-recycle">
+                </i>
+
+            </div>
+
+
+            <h2>
+                SENAI Plásticos
+            </h2>
+
+
+            <p>
+                Gerenciamento de Plástico
+            </p>
+
+        </div>
+
+
+        <!-- =================================================
+             ABAS DE LOGIN
+        ================================================== -->
+
+        <div class="login-tabs">
+
+
+            <button
+                type="button"
+                class="login-tab active"
+                data-tab="professor">
+
+                <i
+                    class="fas fa-chalkboard-user">
+                </i>
+
+                <span>
+                    Professor
+                </span>
+
+            </button>
+
+
+            <button
+                type="button"
+                class="login-tab"
+                data-tab="aluno">
+
+                <i
+                    class="fas fa-user-graduate">
+                </i>
+
+                <span>
+                    Aluno
+                </span>
+
+            </button>
+
+
+        </div>
+
+
+        <!-- =================================================
+             LOGIN PROFESSOR
+        ================================================== -->
+
+        <div
+            id="loginProfessor"
+            class="login-form active">
+
+
+            <div class="input-group">
+
+                <label>
+
+                    <i
+                        class="fas fa-envelope">
+                    </i>
+
+                    Email
+
+                </label>
+
+
+                <input
+                    type="email"
+                    id="loginProfEmail"
+                    placeholder="professor@senai.com.br"
+                    autocomplete="username">
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label>
+
+                    <i
+                        class="fas fa-lock">
+                    </i>
+
+                    Senha
+
+                </label>
+
+
+                <input
+                    type="password"
+                    id="loginProfPassword"
+                    placeholder="Digite sua senha"
+                    autocomplete="current-password">
+
+            </div>
+
+
+            <button
+                type="button"
+                id="doLoginProfBtn"
+                class="btn-login">
+
+                <i
+                    class="fas fa-right-to-bracket">
+                </i>
+
+                Entrar
+
+            </button>
+
+
+            <button
+                type="button"
+                id="btnAbrirCadastroProf"
+                class="btn-secundary btn-cadastrar">
+
+                <i
+                    class="fas fa-user-plus">
+                </i>
+
+                Cadastrar Professor
+
+            </button>
+
+
+        </div>
+
+
+        <!-- =================================================
+             LOGIN ALUNO
+        ================================================== -->
+
+        <div
+            id="loginAluno"
+            class="login-form">
+
+
+            <div class="input-group">
+
+                <label>
+
+                    <i
+                        class="fas fa-envelope">
+                    </i>
+
+                    Email
+
+                </label>
+
+
+                <input
+                    type="email"
+                    id="loginAlunoEmail"
+                    placeholder="aluno@email.com"
+                    autocomplete="username">
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label>
+
+                    <i
+                        class="fas fa-lock">
+                    </i>
+
+                    Senha
+
+                </label>
+
+
+                <input
+                    type="password"
+                    id="loginAlunoPassword"
+                    placeholder="Digite sua senha"
+                    autocomplete="current-password">
+
+            </div>
+
+
+            <button
+                type="button"
+                id="doLoginAlunoBtn"
+                class="btn-login">
+
+                <i
+                    class="fas fa-right-to-bracket">
+                </i>
+
+                Entrar
+
+            </button>
+
+
+            <button
+                type="button"
+                id="esqueciSenhaAlunoBtn"
+                class="btn-secundary">
+
+                <i
+                    class="fas fa-key">
+                </i>
+
+                Esqueci minha senha
+
+            </button>
+
+
+            <button
+                type="button"
+                id="btnAbrirCadastroAluno"
+                class="btn-secundary btn-cadastrar">
+
+                <i
+                    class="fas fa-user-plus">
+                </i>
+
+                Cadastrar Aluno
+
+            </button>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     PAINEL DE SELEÇÃO DA TURMA
+========================================================= -->
+
+<div
+    id="turmaGate"
+    class="turma-gate"
+    style="display:none;">
+
+
+    <div class="turma-gate-card">
+
+
+        <!-- =================================================
+             CABEÇALHO
+        ================================================== -->
+
+        <div class="turma-gate-header">
+
+
+            <div
+                class="turma-gate-icon"
+                id="turmaGateIcon">
+
+                <i
+                    class="fas fa-users">
+                </i>
+
+            </div>
+
+
+            <div>
+
+                <span class="turma-gate-label">
+
+                    ACESSO À TURMA
+
+                </span>
+
+
+                <h2
+                    id="turmaGateTitle">
+
+                    Selecione sua turma
+
+                </h2>
+
+
+                <p
+                    id="turmaGateSubtitle">
+
+                    Escolha uma turma vinculada à sua conta.
+
+                </p>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =================================================
+             FILTRO DE TURMAS
+        ================================================== -->
+
+        <div class="turma-search">
+
+
+            <i
+                class="fas fa-search">
+            </i>
+
+
+            <input
+                type="search"
+                id="filtroTurma"
+                placeholder="Pesquisar turma ou código...">
+
+        </div>
+
+
+        <!-- =================================================
+             LISTA DE TURMAS
+        ================================================== -->
+
+        <div
+            id="turmasLista"
+            class="turmas-lista">
+
+
+            <div class="turmas-loading">
+
+                <i
+                    class="fas fa-spinner fa-spin">
+                </i>
+
+                Carregando turmas...
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =================================================
+             TURMA SELECIONADA
+        ================================================== -->
+
+        <div
+            class="turma-selecionada"
+            id="turmaSelecionadaBox">
+
+
+            <div
+                class="turma-selecionada-info">
+
+
+                <small>
+
+                    TURMA SELECIONADA
+
+                </small>
+
+
+                <strong
+                    id="turmaSelecionadaNome">
+
+                    Nenhuma turma selecionada
+
+                </strong>
+
+
+                <span
+                    id="turmaSelecionadaDetalhes">
+
+                    Selecione uma turma acima.
+
+                </span>
+
+
+            </div>
+
+
+            <div
+                class="turma-codigo-visual">
+
+
+                <span>
+
+                    CÓDIGO
+
+                </span>
+
+
+                <strong
+                    id="codigoTurmaVisual">
+
+                    --------
+
+                </strong>
+
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =================================================
+             CÓDIGO
+        ================================================== -->
+
+        <div
+            class="turma-code-input">
+
+
+            <label>
+
+                <i
+                    class="fas fa-key">
+                </i>
+
+                Digite o código da turma
+
+            </label>
+
+
+            <input
+                type="text"
+                id="codigoTurmaEntrada"
+                placeholder="Digite o código mostrado acima"
+                autocomplete="off"
+                maxlength="30">
+
+
+        </div>
+
+
+        <!-- =================================================
+             ENTRAR
+        ================================================== -->
+
+        <button
+            type="button"
+            id="btnEntrarTurma"
+            class="btn-turma-entrar">
+
+
+            <i
+                class="fas fa-right-to-bracket">
+            </i>
+
+            Entrar na turma
+
+
+        </button>
+
+
+        <!-- =================================================
+             CRIAR TURMA - SOMENTE PROFESSOR
+        ================================================== -->
+
+        <button
+            type="button"
+            id="btnAbrirCriarTurma"
+            class="btn-turma-criar"
+            style="display:none;">
+
+
+            <i
+                class="fas fa-plus">
+            </i>
+
+            Criar nova turma
+
+
+        </button>
+
+
+        <!-- =================================================
+             VOLTAR
+        ================================================== -->
+
+        <button
+            type="button"
+            id="btnVoltarLoginTurma"
+            class="btn-turma-voltar">
+
+
+            <i
+                class="fas fa-arrow-left">
+            </i>
+
+            Voltar
+
+
+        </button>
+
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     SISTEMA PRINCIPAL
+========================================================= -->
+
+<div
+    id="appContainer"
+    class="app-container"
+    style="display:none;">
+
+
+    <!-- =====================================================
+         SIDEBAR
+    ====================================================== -->
+
+    <aside
+        class="sidebar"
+        id="sidebar">
+
+
+        <!-- LOGO -->
+
+        <div class="sidebar-logo">
+
+
+            <div
+                class="sidebar-logo-icon">
+
+                <i
+                    class="fas fa-recycle">
+                </i>
+
+            </div>
+
+
+            <div
+                class="sidebar-logo-text">
+
+                <strong>
+                    SENAI Plásticos
+                </strong>
+
+                <span>
+                    Gerenciamento de Plástico
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =================================================
+             MENU
+        ================================================== -->
+
+        <nav
+            class="sidebar-menu">
+
+
+            <div
+                class="sidebar-section-title">
+
+                PRINCIPAL
+
+            </div>
+
+
+            <!-- DASHBOARD -->
+
+            <button
+                type="button"
+                class="sidebar-item active"
+                data-tab="dashboard"
+                onclick="showTab('dashboard')">
+
+                <i
+                    class="fas fa-house">
+                </i>
+
+                <span>
+                    Dashboard
+                </span>
+
+            </button>
+
+
+            <!-- MATERIAIS -->
+
+            <button
+                type="button"
+                class="sidebar-item"
+                data-tab="materiais"
+                onclick="showTab('materiais')">
+
+                <i
+                    class="fas fa-cubes">
+                </i>
+
+                <span>
+                    Materiais
+                </span>
+
+            </button>
+
+
+            <!-- MOINHO -->
+
+            <button
+                type="button"
+                class="sidebar-item"
+                data-tab="moinho"
+                onclick="showTab('moinho')">
+
+                <i
+                    class="fas fa-gears">
+                </i>
+
+                <span>
+                    Moinho
+                </span>
+
+            </button>
+
+
+            <!-- HISTÓRICO -->
+
+            <button
+                type="button"
+                class="sidebar-item"
+                data-tab="historico"
+                onclick="showTab('historico')">
+
+                <i
+                    class="fas fa-clock-rotate-left">
+                </i>
+
+                <span>
+                    Histórico
+                </span>
+
+            </button>
+
+
+            <!-- TURMAS -->
+
+            <button
+                type="button"
+                class="sidebar-item sidebar-professor-only"
+                data-tab="turmas"
+                id="sidebarTurmasBtn"
+                onclick="showTab('turmas')">
+
+                <i
+                    class="fas fa-users">
+                </i>
+
+                <span>
+                    Turmas
+                </span>
+
+            </button>
+
+
+            <!-- CONTA -->
+
+            <div
+                class="sidebar-section-title">
+
+                CONTA
+
+            </div>
+
+
+            <!-- PERFIL -->
+
+            <button
+                type="button"
+                class="sidebar-item"
+                data-tab="perfil"
+                onclick="showTab('perfil')">
+
+                <i
+                    class="fas fa-user">
+                </i>
+
+                <span>
+                    Meu Perfil
+                </span>
+
+            </button>
+
+
+            <!-- CONFIGURAÇÕES -->
+
+            <button
+                type="button"
+                class="sidebar-item"
+                data-tab="configuracoes"
+                onclick="showTab('configuracoes')">
+
+                <i
+                    class="fas fa-gear">
+                </i>
+
+                <span>
+                    Configurações
+                </span>
+
+            </button>
+
+
+        </nav>
+
+
+        <!-- =================================================
+             USUÁRIO
+        ================================================== -->
+
+        <div
+            class="sidebar-footer">
+
+
+            <div
+                class="sidebar-footer-info">
+
+
+                <div
+                    class="sidebar-footer-avatar">
+
+                    <i
+                        class="fas fa-user">
+                    </i>
+
+                </div>
+
+
+                <div
+                    class="sidebar-footer-text">
+
+
+                    <strong
+                        id="sidebarUserName">
+
+                        Usuário
+
+                    </strong>
+
+
+                    <span
+                        id="sidebarUserRole">
+
+                        Usuário
+
+                    </span>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+    </aside>
+
+
+    <!-- =====================================================
+         OVERLAY MOBILE
+    ====================================================== -->
+
+    <div
+        class="sidebar-overlay"
+        id="sidebarOverlay">
+    </div>
+
+
+    <!-- =====================================================
+         ÁREA PRINCIPAL
+    ====================================================== -->
+
+    <div
+        class="main-area">
+
+
+        <!-- =================================================
+             HEADER
+        ================================================== -->
+
+        <header
+            class="main-header">
+
+
+            <div
+                class="header-left">
+
+
+                <button
+                    type="button"
+                    class="mobile-menu-btn"
+                    id="mobileMenuBtn"
+                    aria-label="Abrir menu"
+                    aria-controls="sidebar"
+                    aria-expanded="false">
+
+                    <i
+                        class="fas fa-bars">
+                    </i>
+
+                </button>
+
+
+                <div
+                    class="page-title">
+
+
+                    <h1
+                        id="pageTitle">
+
+                        Dashboard
+
+                    </h1>
+
+
+                    <p
+                        id="pageSubtitle">
+
+                        Visão geral do gerenciamento de plástico
+
+                    </p>
+
+
+                </div>
+
+
+            </div>
+
+
+            <!-- =================================================
+                 PESQUISA DO CABEÇALHO REMOVIDA
+                 O filtro de turmas continua existindo
+                 dentro da aba Turmas.
+            ================================================== -->
+
+
+            <!-- USUÁRIO -->
+
+            <div
+                class="header-right">
+
+
+                <div
+                    class="header-user">
+
+
+                    <div
+                        class="header-avatar">
+
+                        <i
+                            class="fas fa-user">
+                        </i>
+
+                    </div>
+
+
+                    <div
+                        class="header-user-info">
+
+
+                        <strong
+                            id="headerUserName">
+
+                            Usuário
+
+                        </strong>
+
+
+                        <span
+                            id="headerUserRole">
+
+                            Usuário
+
+                        </span>
+
+
+                    </div>
+
+
+                </div>
+
+
+                <button
+                    type="button"
+                    id="logoutBtnGlobal"
+                    class="logout-btn"
+                    title="Sair">
+
+
+                    <i
+                        class="fas fa-right-from-bracket">
+                    </i>
+
+
+                    <span>
+                        Sair
+                    </span>
+
+
+                </button>
+
+
+            </div>
+
+
+        </header>
+
+
+        <!-- =================================================
+             TURMA ATUAL
+        ================================================== -->
+
+        <div
+            class="turma-header-bar"
+            id="turmaHeaderBar">
+
+
+            <div
+                class="turma-header-icon">
+
+                <i
+                    class="fas fa-users">
+                </i>
+
+            </div>
+
+
+            <div>
+
+
+                <span>
+                    TURMA ATUAL
+                </span>
+
+
+                <strong
+                    id="turmaAtualHeader">
+
+                    Nenhuma turma selecionada
+
+                </strong>
+
+
+            </div>
+
+
+            <div
+                class="turma-header-code">
+
+
+                <span>
+                    CÓDIGO
+                </span>
+
+
+                <strong
+                    id="turmaAtualCodigo">
+
+                    ------
+
+                </strong>
+
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =================================================
+             CONTEÚDO
+        ================================================== -->
+
+        <main
+            class="tabs-container">
+
+
+            <!-- DASHBOARD -->
+
+            <section
+                id="tabDashboard"
+                class="tab-content active">
+
+
+                <div
+                    class="loading">
+
+
+                    <i
+                        class="fas fa-spinner fa-spin">
+                    </i>
+
+
+                    Carregando dashboard...
+
+
+                </div>
+
+
+            </section>
+
+
+            <!-- PERFIL -->
+
+            <section
+                id="tabPerfil"
+                class="tab-content">
+
+
+                <div
+                    class="loading">
+
+
+                    <i
+                        class="fas fa-spinner fa-spin">
+                    </i>
+
+
+                    Carregando perfil...
+
+
+                </div>
+
+
+            </section>
+
+
+            <!-- MATERIAIS -->
+
+            <section
+                id="tabMateriais"
+                class="tab-content">
+
+
+                <div
+                    class="loading">
+
+
+                    <i
+                        class="fas fa-spinner fa-spin">
+                    </i>
+
+
+                    Carregando materiais...
+
+
+                </div>
+
+
+            </section>
+
+
+            <!-- MOINHO -->
+
+            <section
+                id="tabMoinho"
+                class="tab-content">
+
+
+                <div
+                    class="loading">
+
+
+                    <i
+                        class="fas fa-spinner fa-spin">
+                    </i>
+
+
+                    Carregando moinho...
+
+
+                </div>
+
+
+            </section>
+
+
+            <!-- HISTÓRICO -->
+
+            <section
+                id="tabHistorico"
+                class="tab-content">
+
+
+                <div
+                    class="loading">
+
+
+                    <i
+                        class="fas fa-spinner fa-spin">
+                    </i>
+
+
+                    Carregando histórico...
+
+
+                </div>
+
+
+            </section>
+
+
+            <!-- =================================================
+                 TURMAS
+            ================================================== -->
+
+            <section
+                id="tabTurmas"
+                class="tab-content">
+
+
+                <div
+                    class="turmas-page">
+
+
+                    <div
+                        class="turmas-page-header">
+
+
+                        <div>
+
+
+                            <span
+                                class="turmas-page-label">
+
+                                ORGANIZAÇÃO
+
+                            </span>
+
+
+                            <h2>
+
+                                Minhas Turmas
+
+                            </h2>
+
+
+                            <p>
+
+                                Selecione e acesse uma das turmas
+                                vinculadas ao seu perfil.
+
+                            </p>
+
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            id="btnCriarTurmaPagina"
+                            class="btn-primary turma-create-page-btn">
+
+
+                            <i
+                                class="fas fa-plus">
+                            </i>
+
+
+                            Criar turma
+
+
+                        </button>
+
+
+                    </div>
+
+
+                    <!-- FILTRO DE TURMAS -->
+
+                    <div
+                        class="turmas-page-filter">
+
+
+                        <div
+                            class="turmas-page-filter-icon">
+
+
+                            <i
+                                class="fas fa-search">
+                            </i>
+
+
+                        </div>
+
+
+                        <div
+                            class="turmas-page-filter-content">
+
+
+                            <label
+                                for="filtroTurmasPagina">
+
+                                Filtrar turmas
+
+                            </label>
+
+
+                            <input
+                                type="search"
+                                id="filtroTurmasPagina"
+                                placeholder="Pesquisar turma ou código..."
+                                autocomplete="off">
+
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- LISTA -->
+
+                    <div
+                        id="turmasPaginaLista"
+                        class="turmas-page-list">
+
+
+                        <div
+                            class="turmas-loading">
+
+
+                            <i
+                                class="fas fa-spinner fa-spin">
+                            </i>
+
+
+                            Carregando suas turmas...
+
+
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+
+            </section>
+
+
+            <!-- CONFIGURAÇÕES -->
+
+            <section
+                id="tabConfiguracoes"
+                class="tab-content">
+
+
+                <div
+                    class="settings-page">
+
+
+                    <div
+                        class="settings-header">
+
+
+                        <span
+                            class="settings-label">
+
+                            SISTEMA
+
+                        </span>
+
+
+                        <h2>
+
+                            Configurações
+
+                        </h2>
+
+
+                        <p>
+
+                            Configurações da aparência e da sua conta.
+
+                        </p>
+
+
+                    </div>
+
+
+                    <div
+                        class="settings-card">
+
+
+                        <div
+                            class="settings-card-icon">
+
+                            <i
+                                class="fas fa-moon">
+                            </i>
+
+                        </div>
+
+
+                        <div
+                            class="settings-card-content">
+
+
+                            <h3>
+
+                                Aparência
+
+                            </h3>
+
+
+                            <p>
+
+                                O sistema utiliza exclusivamente
+                                o tema escuro.
+
+                            </p>
+
+
+                        </div>
+
+
+                        <div
+                            class="theme-current">
+
+
+                            <i
+                                class="fas fa-moon">
+                            </i>
+
+
+                            Modo escuro
+
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- =================================================
+                         EXCLUIR CONTA
+                         O APP.JS JÁ PODE CONTROLAR O BOTÃO
+                    ================================================== -->
+
+                    <div
+                        class="settings-card danger-card">
+
+
+                        <div
+                            class="settings-card-icon">
+
+
+                            <i
+                                class="fas fa-user-xmark">
+                            </i>
+
+
+                        </div>
+
+
+                        <div
+                            class="settings-card-content">
+
+
+                            <h3>
+
+                                Excluir minha conta
+
+                            </h3>
+
+
+                            <p>
+
+                                Remove sua conta e seus dados do sistema.
+
+                            </p>
+
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            id="btnExcluirMinhaConta"
+                            class="btn-danger">
+
+
+                            <i
+                                class="fas fa-trash">
+                            </i>
+
+
+                            Excluir conta
+
+
+                        </button>
+
+
+                    </div>
+
+
+                </div>
+
+
+            </section>
+
+
+        </main>
+
+
+        <!-- =================================================
+             FOOTER
+        ================================================== -->
+
+        <footer
+            class="app-footer">
+
+
+            <div
+                class="footer-content">
+
+
+                <div
+                    class="footer-left">
+
+
+                    <div
+                        class="footer-dev">
+
+
+                        <i
+                            class="fas fa-code">
+                        </i>
+
+
+                        <span>
+                            Desenvolvido por
+                        </span>
+
+
+                        <strong>
+                            Evelyn
+                        </strong>
+
+
+                        <span>
+                            · Gerenciadora
+                        </span>
+
+
+                        <span>
+                            |
+                        </span>
+
+                        <strong>
+                            Penélope
+                        </strong>
+
+
+                        <span>
+                            · Programadora
+                        </span>
+
+
+                    </div>
+
+
+                    <div
+                        class="footer-school">
+
+
+                        <i
+                            class="fas fa-graduation-cap">
+                        </i>
+
+
+                        Turma Técnico em Desenvolvimento de Sistemas
+                        | Manhã 2025-2026
+
+
+                    </div>
+
+
+                </div>
+
+
+                <div
+                    class="footer-right">
+
+
+                    <span>
+                        v3.0
+                    </span>
+
+
+                    <strong>
+
+
+                        <i
+                            class="fas fa-recycle">
+                        </i>
+
+
+                        SENAI Plásticos
+
+
+                    </strong>
+
+
+                </div>
+
+
+            </div>
+
+
+        </footer>
+
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL - CRIAR TURMA
+========================================================= -->
+
+<div
+    id="criarTurmaModal"
+    class="modal">
+
+
+    <div
+        class="modal-content small-modal">
+
+
+        <div
+            class="modal-header">
+
+
+            <h3>
+
+
+                <i
+                    class="fas fa-users">
+                </i>
+
+
+                Criar nova turma
+
+
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-modal close-criar-turma">
+
+                &times;
+
+            </button>
+
+
+        </div>
+
+
+        <div
+            class="turma-modal-body">
+
+
+            <p
+                class="modal-description">
+
+                Crie uma turma para organizar os alunos
+                e professores que participarão dela.
+
+            </p>
+
+
+            <!-- NOME DA TURMA -->
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-users">
+                    </i>
+
+                    Nome da turma
+
+                </label>
+
+
+                <input
+                    type="text"
+                    id="novaTurmaNome"
+                    placeholder="Ex.: T. Desenvolvimento de Sistemas - 2026 | Manhã">
+
+
+            </div>
+
+
+            <!-- CÓDIGO -->
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-key">
+                    </i>
+
+                    Código de acesso
+
+                </label>
+
+
+                <input
+                    type="text"
+                    id="novaTurmaCodigo"
+                    placeholder="Ex.: SENAI2026"
+                    maxlength="30"
+                    autocomplete="off">
+
+
+            </div>
+
+
+            <!-- CONFIRMAR CÓDIGO -->
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-shield-halved">
+                    </i>
+
+                    Confirmar código
+
+                </label>
+
+
+                <input
+                    type="text"
+                    id="novaTurmaCodigoConfirmar"
+                    placeholder="Digite o código novamente"
+                    maxlength="30"
+                    autocomplete="off">
+
+
+            </div>
+
+
+            <!-- DESCRIÇÃO -->
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-align-left">
+                    </i>
+
+                    Descrição
+
+                </label>
+
+
+                <textarea
+                    id="novaTurmaDescricao"
+                    rows="3"
+                    placeholder="Descrição opcional"></textarea>
+
+
+            </div>
+
+
+            <!-- PROFESSORES -->
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-chalkboard-user">
+                    </i>
+
+                    Professores vinculados à turma
+
+                </label>
+
+
+                <p
+                    class="turma-professores-help">
+
+                    Selecione os professores que terão acesso
+                    a esta turma.
+
+                </p>
+
+
+                <div
+                    id="turmaProfessoresCheckboxes"
+                    class="checkbox-list turma-professores-list">
+
+
+                    <div
+                        class="turma-professor-loading">
+
+
+                        <i
+                            class="fas fa-spinner fa-spin">
+                        </i>
+
+
+                        Carregando professores...
+
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+            <!-- CRIAR -->
+
+            <button
+                type="button"
+                id="btnSalvarNovaTurma"
+                class="btn-primary">
+
+
+                <i
+                    class="fas fa-plus">
+                </i>
+
+
+                Criar turma
+
+
+            </button>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL - CADASTRAR PROFESSOR
+========================================================= -->
+
+<div
+    id="cadastrarProfModal"
+    class="modal">
+
+
+    <div
+        class="modal-content small-modal">
+
+
+        <div
+            class="modal-header">
+
+
+            <h3>
+
+                <i
+                    class="fas fa-user-plus">
+                </i>
+
+                Cadastrar Professor
+
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-modal close-cadastrar-prof">
+
+                &times;
+
+            </button>
+
+
+        </div>
+
+
+        <div
+            id="cadastrarProfBody">
+
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-envelope">
+                    </i>
+
+                    Email
+
+                </label>
+
+
+                <input
+                    type="email"
+                    id="novoProfEmail"
+                    placeholder="professor@senai.com.br">
+
+
+            </div>
+
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-lock">
+                    </i>
+
+                    Senha
+
+                </label>
+
+
+                <input
+                    type="password"
+                    id="novoProfSenha"
+                    placeholder="Mínimo 6 caracteres">
+
+
+            </div>
+
+
+            <button
+                type="button"
+                id="btnCadastrarNovoProf"
+                class="btn-primary full-width">
+
+
+                <i
+                    class="fas fa-user-plus">
+                </i>
+
+
+                Cadastrar
+
+
+            </button>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL - CADASTRAR ALUNO
+========================================================= -->
+
+<div
+    id="cadastrarAlunoModal"
+    class="modal">
+
+
+    <div
+        class="modal-content small-modal">
+
+
+        <div
+            class="modal-header">
+
+
+            <h3>
+
+                <i
+                    class="fas fa-user-graduate">
+                </i>
+
+                Cadastrar Aluno
+
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-modal close-cadastrar-aluno">
+
+                &times;
+
+            </button>
+
+
+        </div>
+
+
+        <div
+            id="cadastrarAlunoBody">
+
+
+            <!-- EMAIL -->
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-envelope">
+                    </i>
+
+                    Email
+
+                </label>
+
+
+                <input
+                    type="email"
+                    id="novoAlunoEmail"
+                    placeholder="aluno@email.com">
+
+
+            </div>
+
+
+            <!-- SENHA -->
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-lock">
+                    </i>
+
+                    Senha
+
+                </label>
+
+
+                <input
+                    type="password"
+                    id="novoAlunoSenha"
+                    placeholder="Mínimo 6 caracteres">
+
+
+            </div>
+
+
+            <!-- TURNO -->
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-clock">
+                    </i>
+
+                    Turno
+
+                </label>
+
+
+                <select
+                    id="novoAlunoTurno">
+
+
+                    <option
+                        value="Manhã">
+
+                        🌅 Manhã
+
+                    </option>
+
+
+                    <option
+                        value="Tarde">
+
+                        ☀️ Tarde
+
+                    </option>
+
+
+                    <option
+                        value="Noite">
+
+                        🌙 Noite
+
+                    </option>
+
+
+                </select>
+
+
+            </div>
+
+
+            <!-- PROFESSORES -->
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-chalkboard-user">
+                    </i>
+
+                    Professor(es) responsável(is)
+
+                </label>
+
+
+                <p
+                    class="turma-professores-help">
+
+                    Selecione os professores que estarão
+                    vinculados ao aluno.
+
+                </p>
+
+
+                <div
+                    id="professoresCheckboxes"
+                    class="checkbox-list">
+
+
+                    <div
+                        class="checkbox-loading">
+
+
+                        <i
+                            class="fas fa-spinner fa-spin">
+                        </i>
+
+
+                        Carregando professores...
+
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+            <!-- TURMA -->
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-users">
+                    </i>
+
+                    Turma
+
+                </label>
+
+
+                <select
+                    id="novoAlunoTurma">
+
+
+                    <option
+                        value="">
+
+                        Selecione a turma posteriormente
+
+                    </option>
+
+
+                </select>
+
+
+                <small
+                    class="form-help">
+
+                    Após fazer login, o aluno poderá selecionar
+                    uma das turmas vinculadas aos professores escolhidos.
+
+                </small>
+
+
+            </div>
+
+
+            <!-- CADASTRAR -->
+
+            <button
+                type="button"
+                id="btnCadastrarNovoAluno"
+                class="btn-primary full-width">
+
+
+                <i
+                    class="fas fa-user-plus">
+                </i>
+
+
+                Cadastrar
+
+
+            </button>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL - REDEFINIR SENHA
+========================================================= -->
+
+<div
+    id="esqueciSenhaModal"
+    class="modal">
+
+
+    <div
+        class="modal-content small-modal">
+
+
+        <div
+            class="modal-header">
+
+
+            <h3>
+
+                <i
+                    class="fas fa-key">
+                </i>
+
+                Redefinir Senha
+
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-modal close-esqueci-senha">
+
+                &times;
+
+            </button>
+
+
+        </div>
+
+
+        <div
+            id="esqueciSenhaBody">
+
+
+            <p
+                class="modal-description">
+
+                Digite seu email e defina uma nova senha.
+
+            </p>
+
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-envelope">
+                    </i>
+
+                    Email
+
+                </label>
+
+
+                <input
+                    type="email"
+                    id="resetEmailInput"
+                    placeholder="seuemail@exemplo.com">
+
+
+            </div>
+
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-lock">
+                    </i>
+
+                    Nova senha
+
+                </label>
+
+
+                <input
+                    type="password"
+                    id="resetNovaSenha"
+                    placeholder="Mínimo 6 caracteres">
+
+
+            </div>
+
+
+            <div
+                class="form-group">
+
+
+                <label>
+
+                    <i
+                        class="fas fa-lock">
+                    </i>
+
+                    Confirmar senha
+
+                </label>
+
+
+                <input
+                    type="password"
+                    id="resetConfirmarSenha"
+                    placeholder="Digite novamente">
+
+
+            </div>
+
+
+            <button
+                type="button"
+                id="btnResetarSenha"
+                class="btn-primary full-width">
+
+
+                <i
+                    class="fas fa-key">
+                </i>
+
+
+                Redefinir
+
+
+            </button>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL - GERENCIAR ALUNOS
+========================================================= -->
+
+<div
+    id="gerenciarAlunosModal"
+    class="modal">
+
+
+    <div
+        class="modal-content">
+
+
+        <div
+            class="modal-header">
+
+
+            <h3>
+
+                <i
+                    class="fas fa-user-graduate">
+                </i>
+
+                Gerenciar Alunos
+
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-modal close-gerenciar-alunos">
+
+                &times;
+
+            </button>
+
+
+        </div>
+
+
+        <div
+            id="gerenciarAlunosBody">
+
+
+            <div
+                id="listaAlunosContainer">
+
+                Carregando...
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL - GERENCIAR PROFESSORES
+========================================================= -->
+
+<div
+    id="gerenciarProfessoresModal"
+    class="modal">
+
+
+    <div
+        class="modal-content">
+
+
+        <div
+            class="modal-header">
+
+
+            <h3>
+
+                <i
+                    class="fas fa-users">
+                </i>
+
+                Gerenciar Professores
+
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-modal close-gerenciar-profs">
+
+                &times;
+
+            </button>
+
+
+        </div>
+
+
+        <div
+            id="gerenciarProfessoresBody">
+
+
+            <div
+                id="listaProfessoresContainer">
+
+                Carregando...
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL - EDITAR
+========================================================= -->
+
+<div
+    id="editModal"
+    class="modal">
+
+
+    <div
+        class="modal-content">
+
+
+        <div
+            class="modal-header">
+
+
+            <h3
+                id="modalTitle">
+
+
+                <i
+                    class="fas fa-edit">
+                </i>
+
+
+                Editar
+
+
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-modal">
+
+                &times;
+
+            </button>
+
+
+        </div>
+
+
+        <div
+            id="modalBody">
+        </div>
+
+
+        <div
+            class="modal-footer">
+
+
+            <button
+                type="button"
+                id="saveModalBtn"
+                class="btn-save">
+
+
+                <i
+                    class="fas fa-check">
+                </i>
+
+
+                Salvar
+
+
+            </button>
+
+
+            <button
+                type="button"
+                id="cancelModalBtn"
+                class="btn-cancel">
+
+                Cancelar
+
+            </button>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL - REMOVER
+========================================================= -->
+
+<div
+    id="removeModal"
+    class="modal">
+
+
+    <div
+        class="modal-content">
+
+
+        <div
+            class="modal-header">
+
+
+            <h3
+                id="removeModalTitle">
+
+
+                <i
+                    class="fas fa-trash">
+                </i>
+
+
+                Remover
+
+
+            </h3>
+
+
+            <button
+                type="button"
+                class="close-remove-modal">
+
+                &times;
+
+            </button>
+
+
+        </div>
+
+
+        <div
+            id="removeModalBody">
+        </div>
+
+
+        <div
+            class="modal-footer">
+
+
+            <button
+                type="button"
+                id="confirmRemoveBtn"
+                class="btn-danger">
+
+
+                <i
+                    class="fas fa-trash">
+                </i>
+
+
+                Confirmar
+
+
+            </button>
+
+
+            <button
+                type="button"
+                id="cancelRemoveModal"
+                class="btn-cancel">
+
+                Cancelar
+
+            </button>
+
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     FIREBASE IMPORTMAP
+========================================================= -->
+
+<script type="importmap">
+
+{
+    "imports": {
+
+        "firebase/app":
+            "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+
+        "firebase/auth":
+            "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+
+        "firebase/database":
+            "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"
+
+    }
+}
+
+</script>
+
+
+<!-- =========================================================
+     SCRIPTS
+========================================================= -->
+
+<script
+    type="module"
+    src="firebaseConfig.js">
+</script>
+
+
+<script
+    type="module"
+    src="auth.js">
+</script>
+
+
+<script
+    type="module"
+    src="app.js">
+</script>
+
+
+</body>
+
+</html>
