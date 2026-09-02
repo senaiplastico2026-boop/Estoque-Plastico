@@ -62,6 +62,7 @@ import {
     setUserData as setMeuPerfilData
 } from './models/meuperfil.js';
 
+
 // ============================================================
 // ESTADO
 // ============================================================
@@ -76,6 +77,10 @@ let ultimaSessaoPreparada = null;
 let currentTurma = null;
 let turmaSelecionada = null;
 let turmasDisponiveis = [];
+
+let authEstadoInicializado = false;
+let processandoEstadoAuth = false;
+
 
 // ============================================================
 // ELEMENTOS
@@ -138,43 +143,53 @@ const gerenciarProfessoresModal =
 const criarTurmaModal =
     document.getElementById('criarTurmaModal');
 
+
 // ============================================================
 // UTILITÁRIOS
 // ============================================================
 
 function normalizarTexto(valor) {
+
     return String(valor ?? '')
         .trim()
         .toLowerCase();
+
 }
 
 function escapeHtml(valor) {
+
     return String(valor ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+
 }
 
 function obterNomeUsuario() {
+
     return (
         userExtraInfo?.nome ||
         currentUser?.email?.split('@')[0] ||
         'Usuário'
     );
+
 }
+
 
 // ============================================================
 // TURMA ATUAL
 // ============================================================
 
 function obterTurmaAtualId() {
+
     return (
         currentTurma?.id ||
         localStorage.getItem('turmaAtualId') ||
         null
     );
+
 }
 
 function definirTurmaAtual(turma) {
@@ -192,6 +207,7 @@ function definirTurmaAtual(turma) {
         window.senaiTurmaAtualId = null;
 
         return null;
+
     }
 
     currentTurma = {
@@ -226,10 +242,12 @@ function definirTurmaAtual(turma) {
         String(turma.id);
 
     return currentTurma;
+
 }
 
 window.obterTurmaAtualId =
     obterTurmaAtualId;
+
 
 // ============================================================
 // TELAS
@@ -238,46 +256,68 @@ window.obterTurmaAtualId =
 function mostrarSomenteLogin() {
 
     if (loginContainer) {
-        loginContainer.style.display = 'flex';
+
+        loginContainer.style.display =
+            'flex';
+
     }
 
     if (appContainer) {
-        appContainer.style.display = 'none';
+
+        appContainer.style.display =
+            'none';
+
     }
 
     const gate =
         document.getElementById('turmaGate');
 
     if (gate) {
-        gate.style.display = 'none';
+
+        gate.style.display =
+            'none';
+
     }
 
     fecharTodosModais();
     closeSidebar();
+
 }
 
 function mostrarApp() {
 
     if (loginContainer) {
-        loginContainer.style.display = 'none';
+
+        loginContainer.style.display =
+            'none';
+
     }
 
     const gate =
         document.getElementById('turmaGate');
 
     if (gate) {
-        gate.style.display = 'none';
+
+        gate.style.display =
+            'none';
+
     }
 
     if (appContainer) {
-        appContainer.style.display = 'block';
+
+        appContainer.style.display =
+            'block';
+
     }
+
 }
 
 function showConnectionStatus() {
 
     let status =
-        document.getElementById('connectionStatus');
+        document.getElementById(
+            'connectionStatus'
+        );
 
     if (!status) {
 
@@ -301,6 +341,7 @@ function showConnectionStatus() {
         `;
 
         document.body.appendChild(status);
+
     }
 
     status.style.background =
@@ -312,7 +353,9 @@ function showConnectionStatus() {
         isOnline
             ? '🟢 Online'
             : '🔴 Offline';
+
 }
+
 
 // ============================================================
 // ABAS DE LOGIN
@@ -329,7 +372,11 @@ document
                 document
                     .querySelectorAll('.login-tab')
                     .forEach(item => {
-                        item.classList.remove('active');
+
+                        item.classList.remove(
+                            'active'
+                        );
+
                     });
 
                 this.classList.add('active');
@@ -340,7 +387,11 @@ document
                 document
                     .querySelectorAll('.login-form')
                     .forEach(form => {
-                        form.classList.remove('active');
+
+                        form.classList.remove(
+                            'active'
+                        );
+
                     });
 
                 const form =
@@ -351,11 +402,18 @@ document
                     );
 
                 if (form) {
-                    form.classList.add('active');
+
+                    form.classList.add(
+                        'active'
+                    );
+
                 }
+
             }
         );
+
     });
+
 
 // ============================================================
 // PROFESSORES - CHECKLIST DO ALUNO
@@ -369,7 +427,9 @@ async function carregarProfessoresChecklist() {
         );
 
     if (!container) {
+
         return;
+
     }
 
     container.innerHTML = `
@@ -394,6 +454,7 @@ async function carregarProfessoresChecklist() {
             `;
 
             return;
+
         }
 
         container.innerHTML =
@@ -424,6 +485,7 @@ async function carregarProfessoresChecklist() {
                             data-email="${escapeHtml(email)}">
 
                         <span>
+
                             <strong>
                                 ${escapeHtml(nome)}
                             </strong>
@@ -437,10 +499,12 @@ async function carregarProfessoresChecklist() {
                                       `
                                     : ''
                             }
+
                         </span>
 
                     </label>
                 `;
+
             }).join('');
 
     } catch (error) {
@@ -456,8 +520,11 @@ async function carregarProfessoresChecklist() {
                 Não foi possível carregar os professores.
             </div>
         `;
+
     }
+
 }
+
 
 // ============================================================
 // PROFESSORES - CHECKLIST DA TURMA
@@ -471,7 +538,9 @@ async function carregarProfessoresParaTurma() {
         );
 
     if (!container) {
+
         return;
+
     }
 
     container.innerHTML = `
@@ -496,6 +565,7 @@ async function carregarProfessoresParaTurma() {
             `;
 
             return;
+
         }
 
         container.innerHTML =
@@ -554,6 +624,7 @@ async function carregarProfessoresParaTurma() {
 
                     </label>
                 `;
+
             }).join('');
 
     } catch (error) {
@@ -569,8 +640,11 @@ async function carregarProfessoresParaTurma() {
                 Erro ao carregar professores.
             </div>
         `;
+
     }
+
 }
+
 
 // ============================================================
 // CADASTRO DE PROFESSOR
@@ -583,8 +657,12 @@ document
         () => {
 
             if (cadastrarProfModal) {
-                cadastrarProfModal.style.display = 'block';
+
+                cadastrarProfModal.style.display =
+                    'block';
+
             }
+
         }
     );
 
@@ -595,8 +673,12 @@ document
         () => {
 
             if (cadastrarProfModal) {
-                cadastrarProfModal.style.display = 'none';
+
+                cadastrarProfModal.style.display =
+                    'none';
+
             }
+
         }
     );
 
@@ -608,13 +690,17 @@ document
 
             const email =
                 document
-                    .getElementById('novoProfEmail')
+                    .getElementById(
+                        'novoProfEmail'
+                    )
                     ?.value
                     .trim();
 
             const senha =
                 document
-                    .getElementById('novoProfSenha')
+                    .getElementById(
+                        'novoProfSenha'
+                    )
                     ?.value
                     .trim();
 
@@ -624,23 +710,35 @@ document
                 );
 
             if (!email || !senha) {
-                alert('⚠️ Preencha email e senha!');
+
+                alert(
+                    '⚠️ Preencha email e senha!'
+                );
+
                 return;
+
             }
 
             if (senha.length < 6) {
+
                 alert(
                     '⚠️ A senha deve ter pelo menos 6 caracteres!'
                 );
+
                 return;
+
             }
 
             try {
 
                 if (btn) {
-                    btn.disabled = true;
+
+                    btn.disabled =
+                        true;
+
                     btn.innerHTML =
                         '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+
                 }
 
                 const result =
@@ -660,6 +758,7 @@ document
                     );
 
                     return;
+
                 }
 
                 alert(
@@ -667,28 +766,43 @@ document
                 );
 
                 if (cadastrarProfModal) {
-                    cadastrarProfModal.style.display = 'none';
+
+                    cadastrarProfModal.style.display =
+                        'none';
+
                 }
 
                 const novoEmail =
-                    document.getElementById('novoProfEmail');
+                    document.getElementById(
+                        'novoProfEmail'
+                    );
 
                 const novaSenha =
-                    document.getElementById('novoProfSenha');
+                    document.getElementById(
+                        'novoProfSenha'
+                    );
 
                 const loginEmail =
-                    document.getElementById('loginProfEmail');
+                    document.getElementById(
+                        'loginProfEmail'
+                    );
 
                 if (novoEmail) {
+
                     novoEmail.value = '';
+
                 }
 
                 if (novaSenha) {
+
                     novaSenha.value = '';
+
                 }
 
                 if (loginEmail) {
+
                     loginEmail.value = email;
+
                 }
 
             } catch (error) {
@@ -706,13 +820,20 @@ document
             } finally {
 
                 if (btn) {
-                    btn.disabled = false;
+
+                    btn.disabled =
+                        false;
+
                     btn.innerHTML =
                         '<i class="fas fa-user-plus"></i> Cadastrar';
+
                 }
+
             }
+
         }
     );
+
 
 // ============================================================
 // CADASTRO DE ALUNO
@@ -725,10 +846,14 @@ document
         async () => {
 
             if (cadastrarAlunoModal) {
-                cadastrarAlunoModal.style.display = 'block';
+
+                cadastrarAlunoModal.style.display =
+                    'block';
+
             }
 
             await carregarProfessoresChecklist();
+
         }
     );
 
@@ -739,8 +864,12 @@ document
         () => {
 
             if (cadastrarAlunoModal) {
-                cadastrarAlunoModal.style.display = 'none';
+
+                cadastrarAlunoModal.style.display =
+                    'none';
+
             }
+
         }
     );
 
@@ -752,19 +881,25 @@ document
 
             const email =
                 document
-                    .getElementById('novoAlunoEmail')
+                    .getElementById(
+                        'novoAlunoEmail'
+                    )
                     ?.value
                     .trim();
 
             const senha =
                 document
-                    .getElementById('novoAlunoSenha')
+                    .getElementById(
+                        'novoAlunoSenha'
+                    )
                     ?.value
                     .trim();
 
             const turno =
                 document
-                    .getElementById('novoAlunoTurno')
+                    .getElementById(
+                        'novoAlunoTurno'
+                    )
                     ?.value ||
                 'Manhã';
 
@@ -776,17 +911,24 @@ document
                 );
 
             const professores =
-                selecionados.map(input => ({
-                    uid:
-                        input.dataset.uid || '',
-                    nome:
-                        input.dataset.nome ||
-                        input.value ||
-                        'Professor',
-                    email:
-                        input.dataset.email ||
-                        ''
-                }));
+                selecionados.map(
+                    input => ({
+
+                        uid:
+                            input.dataset.uid ||
+                            '',
+
+                        nome:
+                            input.dataset.nome ||
+                            input.value ||
+                            'Professor',
+
+                        email:
+                            input.dataset.email ||
+                            ''
+
+                    })
+                );
 
             const btn =
                 document.getElementById(
@@ -794,30 +936,45 @@ document
                 );
 
             if (!email || !senha) {
-                alert('⚠️ Preencha email e senha!');
+
+                alert(
+                    '⚠️ Preencha email e senha!'
+                );
+
                 return;
+
             }
 
             if (senha.length < 6) {
+
                 alert(
                     '⚠️ A senha deve ter pelo menos 6 caracteres!'
                 );
+
                 return;
+
             }
 
             if (!professores.length) {
+
                 alert(
                     '⚠️ Selecione pelo menos um professor!'
                 );
+
                 return;
+
             }
 
             try {
 
                 if (btn) {
-                    btn.disabled = true;
+
+                    btn.disabled =
+                        true;
+
                     btn.innerHTML =
                         '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+
                 }
 
                 const result =
@@ -839,6 +996,7 @@ document
                     );
 
                     return;
+
                 }
 
                 alert(
@@ -846,28 +1004,43 @@ document
                 );
 
                 if (cadastrarAlunoModal) {
-                    cadastrarAlunoModal.style.display = 'none';
+
+                    cadastrarAlunoModal.style.display =
+                        'none';
+
                 }
 
                 const novoEmail =
-                    document.getElementById('novoAlunoEmail');
+                    document.getElementById(
+                        'novoAlunoEmail'
+                    );
 
                 const novaSenha =
-                    document.getElementById('novoAlunoSenha');
+                    document.getElementById(
+                        'novoAlunoSenha'
+                    );
 
                 const loginEmail =
-                    document.getElementById('loginAlunoEmail');
+                    document.getElementById(
+                        'loginAlunoEmail'
+                    );
 
                 if (novoEmail) {
+
                     novoEmail.value = '';
+
                 }
 
                 if (novaSenha) {
+
                     novaSenha.value = '';
+
                 }
 
                 if (loginEmail) {
+
                     loginEmail.value = email;
+
                 }
 
             } catch (error) {
@@ -885,13 +1058,20 @@ document
             } finally {
 
                 if (btn) {
-                    btn.disabled = false;
+
+                    btn.disabled =
+                        false;
+
                     btn.innerHTML =
                         '<i class="fas fa-user-plus"></i> Cadastrar';
+
                 }
+
             }
+
         }
     );
+
 
 // ============================================================
 // REDEFINIÇÃO DE SENHA
@@ -900,8 +1080,12 @@ document
 function abrirResetSenha() {
 
     if (esqueciSenhaModal) {
-        esqueciSenhaModal.style.display = 'block';
+
+        esqueciSenhaModal.style.display =
+            'block';
+
     }
+
 }
 
 document
@@ -925,8 +1109,12 @@ document
         () => {
 
             if (esqueciSenhaModal) {
-                esqueciSenhaModal.style.display = 'none';
+
+                esqueciSenhaModal.style.display =
+                    'none';
+
             }
+
         }
     );
 
@@ -938,19 +1126,25 @@ document
 
             const email =
                 document
-                    .getElementById('resetEmailInput')
+                    .getElementById(
+                        'resetEmailInput'
+                    )
                     ?.value
                     .trim();
 
             const novaSenha =
                 document
-                    .getElementById('resetNovaSenha')
+                    .getElementById(
+                        'resetNovaSenha'
+                    )
                     ?.value
                     .trim();
 
             const confirmarSenha =
                 document
-                    .getElementById('resetConfirmarSenha')
+                    .getElementById(
+                        'resetConfirmarSenha'
+                    )
                     ?.value
                     .trim();
 
@@ -964,30 +1158,48 @@ document
                 !novaSenha ||
                 !confirmarSenha
             ) {
-                alert('⚠️ Preencha todos os campos!');
+
+                alert(
+                    '⚠️ Preencha todos os campos!'
+                );
+
                 return;
+
             }
 
             if (novaSenha.length < 6) {
+
                 alert(
                     '⚠️ A nova senha deve ter pelo menos 6 caracteres!'
                 );
+
                 return;
+
             }
 
-            if (novaSenha !== confirmarSenha) {
+            if (
+                novaSenha !==
+                confirmarSenha
+            ) {
+
                 alert(
                     '❌ As senhas não são iguais!'
                 );
+
                 return;
+
             }
 
             try {
 
                 if (btn) {
-                    btn.disabled = true;
+
+                    btn.disabled =
+                        true;
+
                     btn.innerHTML =
                         '<i class="fas fa-spinner fa-spin"></i> Redefinindo...';
+
                 }
 
                 const result =
@@ -1007,7 +1219,10 @@ document
                     result?.success &&
                     esqueciSenhaModal
                 ) {
-                    esqueciSenhaModal.style.display = 'none';
+
+                    esqueciSenhaModal.style.display =
+                        'none';
+
                 }
 
             } catch (error) {
@@ -1025,13 +1240,20 @@ document
             } finally {
 
                 if (btn) {
-                    btn.disabled = false;
+
+                    btn.disabled =
+                        false;
+
                     btn.innerHTML =
                         '<i class="fas fa-key"></i> Redefinir';
+
                 }
+
             }
+
         }
     );
+
 
 // ============================================================
 // BUSCAR TODAS AS TURMAS
@@ -1043,7 +1265,9 @@ async function buscarTodasTurmas() {
         !isOnline ||
         isUsingLocalData
     ) {
+
         return [];
+
     }
 
     try {
@@ -1057,7 +1281,9 @@ async function buscarTodasTurmas() {
             );
 
         if (!snapshot.exists()) {
+
             return [];
+
         }
 
         const data =
@@ -1065,8 +1291,11 @@ async function buscarTodasTurmas() {
 
         return Object.entries(data).map(
             ([id, turma]) => ({
+
                 id,
+
                 ...turma
+
             })
         );
 
@@ -1078,8 +1307,11 @@ async function buscarTodasTurmas() {
         );
 
         return [];
+
     }
+
 }
+
 
 // ============================================================
 // PROFESSORES DA TURMA
@@ -1088,24 +1320,38 @@ async function buscarTodasTurmas() {
 function obterProfessoresTurma(turma) {
 
     if (!turma) {
+
         return [];
+
     }
 
-    if (Array.isArray(turma.professores)) {
-        return [...turma.professores];
+    if (
+        Array.isArray(
+            turma.professores
+        )
+    ) {
+
+        return [
+            ...turma.professores
+        ];
+
     }
 
     if (
         turma.professores &&
         typeof turma.professores === 'object'
     ) {
+
         return Object.values(
             turma.professores
         );
+
     }
 
     return [];
+
 }
+
 
 // ============================================================
 // PROFESSOR PERTENCE À TURMA
@@ -1116,8 +1362,13 @@ function professorPertenceTurma(
     professor
 ) {
 
-    if (!turma || !professor) {
+    if (
+        !turma ||
+        !professor
+    ) {
+
         return false;
+
     }
 
     const nomeProfessor =
@@ -1136,54 +1387,80 @@ function professorPertenceTurma(
         );
 
     const vinculada =
-        obterProfessoresTurma(turma)
-            .some(item => {
+        obterProfessoresTurma(
+            turma
+        )
+            .some(
+                item => {
 
-                if (typeof item === 'string') {
+                    if (
+                        typeof item ===
+                        'string'
+                    ) {
 
-                    return (
-                        normalizarTexto(item) ===
-                        nomeProfessor
+                        return (
+                            normalizarTexto(
+                                item
+                            ) ===
+                            nomeProfessor
+                        );
+
+                    }
+
+                    return Boolean(
+
+                        (
+                            item?.uid &&
+                            String(
+                                item.uid
+                            ) ===
+                            uidProfessor
+                        ) ||
+
+                        (
+                            item?.email &&
+                            normalizarTexto(
+                                item.email
+                            ) ===
+                            emailProfessor
+                        ) ||
+
+                        (
+                            item?.nome &&
+                            normalizarTexto(
+                                item.nome
+                            ) ===
+                            nomeProfessor
+                        )
+
                     );
+
                 }
-
-                return Boolean(
-                    (
-                        item?.uid &&
-                        String(item.uid) ===
-                        uidProfessor
-                    ) ||
-
-                    (
-                        item?.email &&
-                        normalizarTexto(item.email) ===
-                        emailProfessor
-                    ) ||
-
-                    (
-                        item?.nome &&
-                        normalizarTexto(item.nome) ===
-                        nomeProfessor
-                    )
-                );
-            });
+            );
 
     const criador =
+
         (
             turma.criadoPorUid &&
-            String(turma.criadoPorUid) ===
+            String(
+                turma.criadoPorUid
+            ) ===
             uidProfessor
         ) ||
 
         (
             turma.criadoPorEmail &&
-            normalizarTexto(turma.criadoPorEmail) ===
+            normalizarTexto(
+                turma.criadoPorEmail
+            ) ===
             emailProfessor
         ) ||
 
         (
             turma.criadoPorNome &&
-            normalizarTexto(turma.criadoPorNome) ===
+            normalizarTexto(
+                turma.criadoPorNome
+            ) ===
             nomeProfessor
         );
 
@@ -1191,16 +1468,22 @@ function professorPertenceTurma(
         vinculada ||
         criador
     );
+
 }
+
 
 // ============================================================
 // ALUNO PODE VER TURMA
 // ============================================================
 
-function alunoPodeVerTurma(turma) {
+function alunoPodeVerTurma(
+    turma
+) {
 
     if (!turma) {
+
         return false;
+
     }
 
     const professoresAluno =
@@ -1210,12 +1493,18 @@ function alunoPodeVerTurma(turma) {
             ? userExtraInfo.professoresVinculados
             : [];
 
-    if (!professoresAluno.length) {
+    if (
+        !professoresAluno.length
+    ) {
+
         return false;
+
     }
 
     const professoresTurma =
-        obterProfessoresTurma(turma);
+        obterProfessoresTurma(
+            turma
+        );
 
     return professoresTurma.some(
         professorTurma => {
@@ -1238,14 +1527,22 @@ function alunoPodeVerTurma(turma) {
                               '';
 
                     return (
-                        normalizarTexto(nomeAluno) ===
-                        normalizarTexto(nomeTurma)
+                        normalizarTexto(
+                            nomeAluno
+                        ) ===
+                        normalizarTexto(
+                            nomeTurma
+                        )
                     );
+
                 }
             );
+
         }
     );
+
 }
+
 
 // ============================================================
 // CARREGAR TURMAS DISPONÍVEIS
@@ -1279,18 +1576,25 @@ async function carregarTurmasDisponiveis() {
                         turma
                     )
             );
+
     }
 
     turmasDisponiveis.sort(
         (a, b) =>
-            normalizarTexto(a.nome)
+            normalizarTexto(
+                a.nome
+            )
                 .localeCompare(
-                    normalizarTexto(b.nome)
+                    normalizarTexto(
+                        b.nome
+                    )
                 )
     );
 
     return turmasDisponiveis;
+
 }
+
 
 // ============================================================
 // FILTRAR TURMAS
@@ -1302,26 +1606,40 @@ function filtrarTurmas(
 ) {
 
     const termo =
-        normalizarTexto(texto);
+        normalizarTexto(
+            texto
+        );
 
     if (!termo) {
+
         return lista;
+
     }
 
-    return lista.filter(turma =>
-        normalizarTexto(
-            turma.nome
-        ).includes(termo) ||
+    return lista.filter(
+        turma =>
 
-        normalizarTexto(
-            turma.codigo
-        ).includes(termo) ||
+            normalizarTexto(
+                turma.nome
+            ).includes(
+                termo
+            ) ||
 
-        normalizarTexto(
-            turma.descricao
-        ).includes(termo)
+            normalizarTexto(
+                turma.codigo
+            ).includes(
+                termo
+            ) ||
+
+            normalizarTexto(
+                turma.descricao
+            ).includes(
+                termo
+            )
     );
+
 }
+
 
 // ============================================================
 // GARANTIR GATE DE TURMA
@@ -1335,11 +1653,15 @@ function garantirTurmaGate() {
         );
 
     if (gate) {
+
         return gate;
+
     }
 
     gate =
-        document.createElement('div');
+        document.createElement(
+            'div'
+        );
 
     gate.id =
         'turmaGate';
@@ -1357,7 +1679,9 @@ function garantirTurmaGate() {
             <div class="turma-gate-header">
 
                 <div class="turma-gate-icon">
+
                     <i class="fas fa-users"></i>
+
                 </div>
 
                 <div>
@@ -1427,8 +1751,11 @@ function garantirTurmaGate() {
             <div class="turma-code-input">
 
                 <label>
+
                     <i class="fas fa-key"></i>
+
                     Digite o código da turma
+
                 </label>
 
                 <input
@@ -1474,18 +1801,25 @@ function garantirTurmaGate() {
             </button>
 
         </div>
+
     `;
 
-    document.body.appendChild(gate);
+    document.body.appendChild(
+        gate
+    );
 
     return gate;
+
 }
+
 
 // ============================================================
 // MOSTRAR GATE
 // ============================================================
 
-function mostrarGate(role) {
+function mostrarGate(
+    role
+) {
 
     const gate =
         garantirTurmaGate();
@@ -1534,8 +1868,10 @@ function mostrarGate(role) {
         null;
 
     if (titulo) {
+
         titulo.textContent =
             'Selecione sua turma';
+
     }
 
     if (subtitulo) {
@@ -1544,6 +1880,7 @@ function mostrarGate(role) {
             role === 'professor'
                 ? 'Selecione uma turma vinculada ao seu perfil e confirme o código.'
                 : 'Escolha uma turma relacionada aos professores da sua conta e confirme o código.';
+
     }
 
     if (criarBtn) {
@@ -1552,66 +1889,96 @@ function mostrarGate(role) {
             role === 'professor'
                 ? 'flex'
                 : 'none';
+
     }
 
     if (filtro) {
+
         filtro.value = '';
+
     }
 
     if (codigoInput) {
+
         codigoInput.value = '';
+
     }
 
     if (nome) {
+
         nome.textContent =
             'Nenhuma turma selecionada';
+
     }
 
     if (codigo) {
+
         codigo.textContent =
             '--------';
+
     }
 
     if (detalhes) {
+
         detalhes.textContent =
             'Selecione uma turma acima.';
+
     }
 
     carregarTurmasDisponiveis()
-        .then(() =>
-            renderListaTurmasGate()
+        .then(
+            () =>
+                renderListaTurmasGate()
         )
-        .catch(error => {
+        .catch(
+            error => {
 
-            console.error(
-                'Erro carregando turmas:',
-                error
-            );
+                console.error(
+                    'Erro carregando turmas:',
+                    error
+                );
 
-            renderListaTurmasGate([]);
-        });
+                renderListaTurmasGate(
+                    []
+                );
+
+            }
+        );
 
     if (appContainer) {
-        appContainer.style.display = 'none';
+
+        appContainer.style.display =
+            'none';
+
     }
 
     if (loginContainer) {
-        loginContainer.style.display = 'none';
+
+        loginContainer.style.display =
+            'none';
+
     }
 
-    gate.style.display = 'flex';
+    gate.style.display =
+        'flex';
 
     closeSidebar();
+
 }
+
 
 // ============================================================
 // SELECIONAR TURMA
 // ============================================================
 
-function selecionarTurma(turma) {
+function selecionarTurma(
+    turma
+) {
 
     if (!turma) {
+
         return;
+
     }
 
     turmaSelecionada = {
@@ -1639,25 +2006,34 @@ function selecionarTurma(turma) {
         );
 
     if (nome) {
+
         nome.textContent =
             turma.nome ||
             'Turma';
+
     }
 
     if (codigo) {
+
         codigo.textContent =
             turma.codigo ||
             '--------';
+
     }
 
     if (detalhes) {
+
         detalhes.textContent =
             `Turma criada por ${turma.criadoPorNome || turma.criadoPorEmail || 'Professor'} em ${turma.criadoEm || 'data não informada'}`;
+
     }
 
     if (input) {
+
         input.value = '';
+
         input.focus();
+
     }
 
     const filtro =
@@ -1671,7 +2047,9 @@ function selecionarTurma(turma) {
             filtro?.value || ''
         )
     );
+
 }
+
 
 // ============================================================
 // RENDERIZAR LISTA DO GATE
@@ -1687,7 +2065,9 @@ function renderListaTurmasGate(
         );
 
     if (!container) {
+
         return;
+
     }
 
     if (!lista?.length) {
@@ -1697,7 +2077,9 @@ function renderListaTurmasGate(
             <div class="turmas-empty">
 
                 <div class="turmas-empty-icon">
+
                     <i class="fas fa-users-slash"></i>
+
                 </div>
 
                 <strong>
@@ -1707,98 +2089,128 @@ function renderListaTurmasGate(
                 <span>
 
                     ${
-                        currentUserRole === 'professor'
+                        currentUserRole ===
+                        'professor'
+
                             ? 'Você ainda não está vinculado a nenhuma turma.'
+
                             : 'Nenhuma turma foi encontrada para os professores vinculados à sua conta.'
                     }
 
                 </span>
 
             </div>
+
         `;
 
         return;
+
     }
 
     container.innerHTML =
-        lista.map(turma => {
+        lista
+            .map(
+                turma => {
 
-            const ativa =
-                String(
-                    turmaSelecionada?.id || ''
-                ) ===
-                String(
-                    turma.id || ''
-                );
-
-            const professores =
-                obterProfessoresTurma(turma);
-
-            return `
-
-                <button
-                    type="button"
-                    class="
-                        turma-item
-                        ${ativa ? 'active' : ''}
-                    "
-                    data-turma-id="${escapeHtml(turma.id)}">
-
-                    <div class="turma-item-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-
-                    <div class="turma-item-content">
-
-                        <strong>
-                            ${escapeHtml(
-                                turma.nome ||
-                                'Turma sem nome'
-                            )}
-                        </strong>
-
-                        <span>
-                            ${escapeHtml(
-                                turma.descricao ||
-                                `${professores.length} professor(es) vinculado(s)`
-                            )}
-                        </span>
-
-                    </div>
-
-                    <div class="turma-item-arrow">
-                        <i class="fas fa-chevron-right"></i>
-                    </div>
-
-                </button>
-            `;
-
-        }).join('');
-
-    container
-        .querySelectorAll('.turma-item')
-        .forEach(item => {
-
-            item.addEventListener(
-                'click',
-                () => {
-
-                    const turma =
-                        turmasDisponiveis.find(
-                            registro =>
-                                String(
-                                    registro.id
-                                ) ===
-                                String(
-                                    item.dataset.turmaId
-                                )
+                    const ativa =
+                        String(
+                            turmaSelecionada?.id || ''
+                        ) ===
+                        String(
+                            turma.id || ''
                         );
 
-                    selecionarTurma(turma);
+                    const professores =
+                        obterProfessoresTurma(
+                            turma
+                        );
+
+                    return `
+
+                        <button
+                            type="button"
+                            class="
+                                turma-item
+                                ${ativa ? 'active' : ''}
+                            "
+                            data-turma-id="${escapeHtml(turma.id)}">
+
+                            <div class="turma-item-icon">
+
+                                <i class="fas fa-users"></i>
+
+                            </div>
+
+                            <div class="turma-item-content">
+
+                                <strong>
+
+                                    ${escapeHtml(
+                                        turma.nome ||
+                                        'Turma sem nome'
+                                    )}
+
+                                </strong>
+
+                                <span>
+
+                                    ${escapeHtml(
+                                        turma.descricao ||
+                                        `${professores.length} professor(es) vinculado(s)`
+                                    )}
+
+                                </span>
+
+                            </div>
+
+                            <div class="turma-item-arrow">
+
+                                <i class="fas fa-chevron-right"></i>
+
+                            </div>
+
+                        </button>
+
+                    `;
+
                 }
-            );
-        });
+            )
+            .join('');
+
+    container
+        .querySelectorAll(
+            '.turma-item'
+        )
+        .forEach(
+            item => {
+
+                item.addEventListener(
+                    'click',
+                    () => {
+
+                        const turma =
+                            turmasDisponiveis.find(
+                                registro =>
+                                    String(
+                                        registro.id
+                                    ) ===
+                                    String(
+                                        item.dataset.turmaId
+                                    )
+                            );
+
+                        selecionarTurma(
+                            turma
+                        );
+
+                    }
+                );
+
+            }
+        );
+
 }
+
 
 // ============================================================
 // FILTRO DO GATE
@@ -1812,7 +2224,9 @@ document.addEventListener(
             event.target?.id !==
             'filtroTurma'
         ) {
+
             return;
+
         }
 
         renderListaTurmasGate(
@@ -1821,8 +2235,10 @@ document.addEventListener(
                 event.target.value
             )
         );
+
     }
 );
+
 
 // ============================================================
 // ENTRAR NA TURMA
@@ -1835,6 +2251,7 @@ async function confirmarEntradaNaTurma() {
         mostrarSomenteLogin();
 
         return;
+
     }
 
     if (!turmaSelecionada) {
@@ -1844,6 +2261,7 @@ async function confirmarEntradaNaTurma() {
         );
 
         return;
+
     }
 
     const input =
@@ -1852,7 +2270,8 @@ async function confirmarEntradaNaTurma() {
         );
 
     const digitado =
-        input?.value.trim() || '';
+        input?.value.trim() ||
+        '';
 
     if (!digitado) {
 
@@ -1863,10 +2282,13 @@ async function confirmarEntradaNaTurma() {
         input?.focus();
 
         return;
+
     }
 
     if (
-        normalizarTexto(digitado) !==
+        normalizarTexto(
+            digitado
+        ) !==
         normalizarTexto(
             turmaSelecionada.codigo
         )
@@ -1879,88 +2301,20 @@ async function confirmarEntradaNaTurma() {
         input?.select();
 
         return;
+
     }
 
     try {
 
-        if (
-            currentUserRole ===
-            'aluno'
-        ) {
-
-            const professoresAluno =
-                Array.isArray(
-                    userExtraInfo?.professoresVinculados
-                )
-                    ? [
-                        ...userExtraInfo.professoresVinculados
-                    ]
-                    : [];
-
-            if (professoresAluno.length) {
-
-                const professoresAtuais =
-                    obterProfessoresTurma(
-                        turmaSelecionada
-                    );
-
-                for (
-                    const professorAluno
-                    of professoresAluno
-                ) {
-
-                    const nomeAluno =
-                        typeof professorAluno ===
-                        'string'
-                            ? professorAluno
-                            : professorAluno?.nome ||
-                              professorAluno?.email ||
-                              '';
-
-                    const existe =
-                        professoresAtuais.some(
-                            item => {
-
-                                const nome =
-                                    typeof item ===
-                                    'string'
-                                        ? item
-                                        : item?.nome ||
-                                          item?.email ||
-                                          '';
-
-                                return (
-                                    normalizarTexto(nome) ===
-                                    normalizarTexto(nomeAluno)
-                                );
-                            }
-                        );
-
-                    if (!existe) {
-                        professoresAtuais.push(
-                            professorAluno
-                        );
-                    }
-                }
-
-                await update(
-                    ref(
-                        db,
-                        `turmas/${turmaSelecionada.id}`
-                    ),
-                    {
-                        professores:
-                            professoresAtuais
-                    }
-                );
-
-                turmaSelecionada = {
-                    ...turmaSelecionada,
-                    professores:
-                        professoresAtuais
-                };
-            }
-        }
+        /*
+         * IMPORTANTE:
+         *
+         * O aluno NÃO altera mais a lista de professores
+         * da turma.
+         *
+         * A lista de professores pertence à turma e deve
+         * continuar exatamente como foi cadastrada.
+         */
 
         definirTurmaAtual(
             turmaSelecionada
@@ -1979,8 +2333,11 @@ async function confirmarEntradaNaTurma() {
             '❌ Não foi possível entrar na turma:\n' +
             error.message
         );
+
     }
+
 }
+
 
 document.addEventListener(
     'click',
@@ -1992,10 +2349,14 @@ document.addEventListener(
             );
 
         if (btn) {
+
             confirmarEntradaNaTurma();
+
         }
+
     }
 );
+
 
 // ============================================================
 // ABRIR SISTEMA NA TURMA
@@ -2007,30 +2368,40 @@ async function abrirSistemaNaTurma() {
         !currentUser ||
         !currentTurma
     ) {
+
         return;
+
     }
 
     window.senaiTurmaAtualId =
-        String(currentTurma.id);
+        String(
+            currentTurma.id
+        );
 
     localStorage.setItem(
         'turmaAtual',
-        JSON.stringify(currentTurma)
+        JSON.stringify(
+            currentTurma
+        )
     );
 
     localStorage.setItem(
         'turmaAtualId',
-        String(currentTurma.id)
+        String(
+            currentTurma.id
+        )
     );
 
     localStorage.setItem(
         'turmaAtualNome',
-        currentTurma.nome || ''
+        currentTurma.nome ||
+        ''
     );
 
     localStorage.setItem(
         'turmaAtualCodigo',
-        currentTurma.codigo || ''
+        currentTurma.codigo ||
+        ''
     );
 
     const gate =
@@ -2039,7 +2410,10 @@ async function abrirSistemaNaTurma() {
         );
 
     if (gate) {
-        gate.style.display = 'none';
+
+        gate.style.display =
+            'none';
+
     }
 
     mostrarApp();
@@ -2064,8 +2438,11 @@ async function abrirSistemaNaTurma() {
             'Erro carregando módulos:',
             error
         );
+
     }
+
 }
+
 
 // ============================================================
 // INTERFACE TURMA ATUAL
@@ -2088,6 +2465,7 @@ function atualizarTurmaInterface() {
         nome.textContent =
             currentTurma?.nome ||
             'Nenhuma turma selecionada';
+
     }
 
     if (codigo) {
@@ -2095,8 +2473,11 @@ function atualizarTurmaInterface() {
         codigo.textContent =
             currentTurma?.codigo ||
             '------';
+
     }
+
 }
+
 
 // ============================================================
 // LIMPAR FORMULÁRIO DE TURMA
@@ -2105,21 +2486,34 @@ function atualizarTurmaInterface() {
 function limparFormularioCriarTurma() {
 
     const campos = [
+
         'novaTurmaNome',
+
         'novaTurmaCodigo',
+
         'novaTurmaCodigoConfirmar',
+
         'novaTurmaDescricao'
+
     ];
 
-    campos.forEach(id => {
+    campos.forEach(
+        id => {
 
-        const input =
-            document.getElementById(id);
+            const input =
+                document.getElementById(
+                    id
+                );
 
-        if (input) {
-            input.value = '';
+            if (input) {
+
+                input.value =
+                    '';
+
+            }
+
         }
-    });
+    );
 
     const aviso =
         document.getElementById(
@@ -2127,8 +2521,13 @@ function limparFormularioCriarTurma() {
         );
 
     if (aviso) {
-        aviso.textContent = '';
-        aviso.style.display = 'none';
+
+        aviso.textContent =
+            '';
+
+        aviso.style.display =
+            'none';
+
     }
 
     const btn =
@@ -2138,10 +2537,12 @@ function limparFormularioCriarTurma() {
 
     if (btn) {
 
-        btn.disabled = false;
+        btn.disabled =
+            false;
 
         btn.innerHTML =
             '<i class="fas fa-plus"></i> Criar turma';
+
     }
 
     const professoresContainer =
@@ -2157,8 +2558,11 @@ function limparFormularioCriarTurma() {
                 Carregando professores...
             </div>
         `;
+
     }
+
 }
+
 
 // ============================================================
 // ABRIR CRIAR TURMA
@@ -2173,6 +2577,7 @@ async function abrirCriarTurmaModal() {
         );
 
         return;
+
     }
 
     if (
@@ -2185,12 +2590,16 @@ async function abrirCriarTurmaModal() {
         );
 
         return;
+
     }
 
     limparFormularioCriarTurma();
 
     if (criarTurmaModal) {
-        criarTurmaModal.style.display = 'block';
+
+        criarTurmaModal.style.display =
+            'block';
+
     }
 
     await carregarProfessoresParaTurma();
@@ -2203,9 +2612,12 @@ async function abrirCriarTurmaModal() {
                     'novaTurmaNome'
                 )
                 ?.focus();
+
         }
     );
+
 }
+
 
 document.addEventListener(
     'click',
@@ -2221,21 +2633,30 @@ document.addEventListener(
         ) {
 
             abrirCriarTurmaModal();
+
         }
+
     }
 );
 
 document
-    .querySelector('.close-criar-turma')
+    .querySelector(
+        '.close-criar-turma'
+    )
     ?.addEventListener(
         'click',
         () => {
 
             if (criarTurmaModal) {
-                criarTurmaModal.style.display = 'none';
+
+                criarTurmaModal.style.display =
+                    'none';
+
             }
+
         }
     );
+
 
 // ============================================================
 // CRIAR TURMA
@@ -2251,7 +2672,8 @@ document
 
             if (
                 !currentUser ||
-                currentUserRole !== 'professor'
+                currentUserRole !==
+                'professor'
             ) {
 
                 alert(
@@ -2259,19 +2681,26 @@ document
                 );
 
                 return;
+
             }
 
             const nome =
                 document
-                    .getElementById('novaTurmaNome')
+                    .getElementById(
+                        'novaTurmaNome'
+                    )
                     ?.value
-                    .trim() || '';
+                    .trim() ||
+                '';
 
             const codigo =
                 document
-                    .getElementById('novaTurmaCodigo')
+                    .getElementById(
+                        'novaTurmaCodigo'
+                    )
                     ?.value
-                    .trim() || '';
+                    .trim() ||
+                '';
 
             const confirmar =
                 document
@@ -2279,7 +2708,8 @@ document
                         'novaTurmaCodigoConfirmar'
                     )
                     ?.value
-                    .trim() || '';
+                    .trim() ||
+                '';
 
             const descricao =
                 document
@@ -2287,7 +2717,8 @@ document
                         'novaTurmaDescricao'
                     )
                     ?.value
-                    .trim() || '';
+                    .trim() ||
+                '';
 
             const selecionados =
                 Array.from(
@@ -2299,15 +2730,20 @@ document
             const professoresSelecionados =
                 selecionados.map(
                     checkbox => ({
+
                         uid:
-                            checkbox.dataset.uid || '',
+                            checkbox.dataset.uid ||
+                            '',
+
                         nome:
                             checkbox.dataset.nome ||
                             checkbox.value ||
                             'Professor',
+
                         email:
                             checkbox.dataset.email ||
                             ''
+
                     })
                 );
 
@@ -2317,50 +2753,73 @@ document
                 );
 
             if (!nome) {
-                alert('⚠️ Informe o nome da turma.');
+
+                alert(
+                    '⚠️ Informe o nome da turma.'
+                );
+
                 return;
+
             }
 
             if (!codigo) {
-                alert('⚠️ Informe o código da turma.');
+
+                alert(
+                    '⚠️ Informe o código da turma.'
+                );
+
                 return;
+
             }
 
-            if (codigo.length < 3) {
+            if (
+                codigo.length <
+                3
+            ) {
 
                 alert(
                     '⚠️ O código precisa ter pelo menos 3 caracteres.'
                 );
 
                 return;
+
             }
 
-            if (codigo !== confirmar) {
+            if (
+                codigo !==
+                confirmar
+            ) {
 
                 alert(
                     '❌ Os códigos não são iguais.'
                 );
 
                 return;
+
             }
 
-            if (!professoresSelecionados.length) {
+            if (
+                !professoresSelecionados.length
+            ) {
 
                 alert(
                     '⚠️ Selecione pelo menos um professor para a turma.'
                 );
 
                 return;
+
             }
 
             try {
 
                 if (btn) {
 
-                    btn.disabled = true;
+                    btn.disabled =
+                        true;
 
                     btn.innerHTML =
                         '<i class="fas fa-spinner fa-spin"></i> Criando...';
+
                 }
 
                 const turmas =
@@ -2387,6 +2846,7 @@ document
                     );
 
                     return;
+
                 }
 
                 const novaRef =
@@ -2400,13 +2860,18 @@ document
                 const turmaId =
                     novaRef.key;
 
-                const professoresDaTurma = {};
+                const professoresDaTurma =
+                    {};
 
                 professoresSelecionados.forEach(
                     professor => {
 
-                        if (!professor.uid) {
+                        if (
+                            !professor.uid
+                        ) {
+
                             return;
+
                         }
 
                         professoresDaTurma[
@@ -2430,7 +2895,9 @@ document
 
                             vinculadoEm:
                                 Date.now()
+
                         };
+
                     }
                 );
 
@@ -2452,14 +2919,17 @@ document
                             obterNomeUsuario(),
 
                         email:
-                            currentUser.email || '',
+                            currentUser.email ||
+                            '',
 
                         tipo:
                             'criador',
 
                         vinculadoEm:
                             Date.now()
+
                     };
+
                 }
 
                 const novaTurma = {
@@ -2489,7 +2959,8 @@ document
                         obterNomeUsuario(),
 
                     criadoPorEmail:
-                        currentUser.email || '',
+                        currentUser.email ||
+                        '',
 
                     ativo:
                         true,
@@ -2506,15 +2977,22 @@ document
                     lixeira_materiais:
                         {},
 
-                    moinho:
-                        {
-                            materiais: [],
-                            capacidadeMax: 900,
-                            historico: []
-                        },
+                    moinho: {
+
+                        materiais:
+                            [],
+
+                        capacidadeMax:
+                            900,
+
+                        historico:
+                            []
+
+                    },
 
                     historico:
                         {}
+
                 };
 
                 await set(
@@ -2527,8 +3005,12 @@ document
                     of professoresSelecionados
                 ) {
 
-                    if (!professor.uid) {
+                    if (
+                        !professor.uid
+                    ) {
+
                         continue;
+
                     }
 
                     await update(
@@ -2537,12 +3019,16 @@ document
                             `usuarios/${professor.uid}`
                         ),
                         {
+
                             [`turmasVinculadas/${turmaId}`]:
                                 true
+
                         }
                     );
 
-                    if (professor.email) {
+                    if (
+                        professor.email
+                    ) {
 
                         await update(
                             ref(
@@ -2553,11 +3039,15 @@ document
                                 )}`
                             ),
                             {
+
                                 [`turmasVinculadas/${turmaId}`]:
                                     true
+
                             }
                         );
+
                     }
+
                 }
 
                 await update(
@@ -2578,6 +3068,7 @@ document
 
                         [`turmasVinculadas/${turmaId}`]:
                             true
+
                     }
                 );
 
@@ -2591,7 +3082,10 @@ document
                 limparFormularioCriarTurma();
 
                 if (criarTurmaModal) {
-                    criarTurmaModal.style.display = 'none';
+
+                    criarTurmaModal.style.display =
+                        'none';
+
                 }
 
                 alert(
@@ -2618,28 +3112,38 @@ document
 
                 if (btn) {
 
-                    btn.disabled = false;
+                    btn.disabled =
+                        false;
 
                     btn.innerHTML =
                         '<i class="fas fa-plus"></i> Criar turma';
+
                 }
+
             }
+
         }
     );
+
 
 // ============================================================
 // PROFESSOR PODE APAGAR TURMA
 // Criador OU professor vinculado
 // ============================================================
 
-function professorPodeApagarTurma(turma) {
+function professorPodeApagarTurma(
+    turma
+) {
 
     if (
-        currentUserRole !== 'professor' ||
+        currentUserRole !==
+            'professor' ||
         !currentUser?.uid ||
         !turma
     ) {
+
         return false;
+
     }
 
     const uid =
@@ -2649,22 +3153,30 @@ function professorPodeApagarTurma(turma) {
 
     if (
         String(
-            turma.criadoPorUid || ''
+            turma.criadoPorUid ||
+            ''
         ) === uid
     ) {
+
         return true;
+
     }
 
     return obterProfessoresTurma(
         turma
-    ).some(
-        professor =>
-            typeof professor !== 'string' &&
-            String(
-                professor?.uid || ''
-            ) === uid
-    );
+    )
+        .some(
+            professor =>
+                typeof professor !==
+                    'string' &&
+                String(
+                    professor?.uid ||
+                    ''
+                ) === uid
+        );
+
 }
+
 
 // ============================================================
 // ABA TURMAS
@@ -2676,7 +3188,9 @@ function garantirAbaTurmasProfessor() {
         currentUserRole !==
         'professor'
     ) {
+
         return null;
+
     }
 
     const nav =
@@ -2693,7 +3207,9 @@ function garantirAbaTurmasProfessor() {
         !nav ||
         !tabs
     ) {
+
         return null;
+
     }
 
     let button =
@@ -2742,6 +3258,7 @@ function garantirAbaTurmasProfessor() {
             nav.appendChild(
                 button
             );
+
         }
 
         button.addEventListener(
@@ -2751,8 +3268,10 @@ function garantirAbaTurmasProfessor() {
                 window.showTab(
                     'turmas'
                 );
+
             }
         );
+
     }
 
     let section =
@@ -2826,6 +3345,7 @@ function garantirAbaTurmasProfessor() {
                 </div>
 
             </div>
+
         `;
 
         tabs.appendChild(
@@ -2840,6 +3360,7 @@ function garantirAbaTurmasProfessor() {
                 'click',
                 abrirCriarTurmaModal
             );
+
     }
 
     const filtroTurmas =
@@ -2849,7 +3370,8 @@ function garantirAbaTurmasProfessor() {
 
     if (
         filtroTurmas &&
-        filtroTurmas.dataset.listenerFiltro !== 'true'
+        filtroTurmas.dataset.listenerFiltro !==
+            'true'
     ) {
 
         filtroTurmas.dataset.listenerFiltro =
@@ -2860,8 +3382,10 @@ function garantirAbaTurmasProfessor() {
             () => {
 
                 renderTurmasPagina();
+
             }
         );
+
     }
 
     const botaoCriar =
@@ -2871,7 +3395,8 @@ function garantirAbaTurmasProfessor() {
 
     if (
         botaoCriar &&
-        botaoCriar.dataset.listenerCriar !== 'true'
+        botaoCriar.dataset.listenerCriar !==
+            'true'
     ) {
 
         botaoCriar.dataset.listenerCriar =
@@ -2881,10 +3406,13 @@ function garantirAbaTurmasProfessor() {
             'click',
             abrirCriarTurmaModal
         );
+
     }
 
     return section;
+
 }
+
 
 // ============================================================
 // RENDERIZAR TURMAS DO PROFESSOR
@@ -2896,7 +3424,9 @@ async function renderTurmasPagina() {
         currentUserRole !==
         'professor'
     ) {
+
         return;
+
     }
 
     garantirAbaTurmasProfessor();
@@ -2907,7 +3437,9 @@ async function renderTurmasPagina() {
         );
 
     if (!container) {
+
         return;
+
     }
 
     container.innerHTML = `
@@ -2929,7 +3461,8 @@ async function renderTurmasPagina() {
         const filtro =
             document.getElementById(
                 'filtroTurmasPagina'
-            )?.value || '';
+            )?.value ||
+            '';
 
         const lista =
             filtrarTurmas(
@@ -2944,7 +3477,9 @@ async function renderTurmasPagina() {
                 <div class="turmas-empty">
 
                     <div class="turmas-empty-icon">
+
                         <i class="fas fa-users-slash"></i>
+
                     </div>
 
                     <strong>
@@ -2957,9 +3492,11 @@ async function renderTurmasPagina() {
                     </span>
 
                 </div>
+
             `;
 
             return;
+
         }
 
         container.innerHTML =
@@ -2991,7 +3528,9 @@ async function renderTurmasPagina() {
                                 <div class="turma-page-main">
 
                                     <div class="turma-page-icon">
+
                                         <i class="fas fa-users"></i>
+
                                     </div>
 
                                     <div class="turma-page-info">
@@ -3027,6 +3566,7 @@ async function renderTurmasPagina() {
                                     ${
                                         ativa
                                             ? `
+
                                                 <span class="turma-current-badge">
 
                                                     <i class="fas fa-check"></i>
@@ -3034,6 +3574,7 @@ async function renderTurmasPagina() {
                                                     Turma atual
 
                                                 </span>
+
                                               `
                                             : ''
                                     }
@@ -3056,6 +3597,7 @@ async function renderTurmasPagina() {
                                             turma
                                         )
                                             ? `
+
                                                 <button
                                                     type="button"
                                                     class="btn-danger turma-remover-page"
@@ -3063,7 +3605,8 @@ async function renderTurmasPagina() {
                                                         turma.id
                                                     )}"
                                                     data-nome="${escapeHtml(
-                                                        turma.nome || 'Turma'
+                                                        turma.nome ||
+                                                        'Turma'
                                                     )}">
 
                                                     <i class="fas fa-trash"></i>
@@ -3071,6 +3614,7 @@ async function renderTurmasPagina() {
                                                     Apagar turma
 
                                                 </button>
+
                                               `
                                             : ''
                                     }
@@ -3080,6 +3624,7 @@ async function renderTurmasPagina() {
                             </div>
 
                         `;
+
                     }
                 )
                 .join('');
@@ -3107,7 +3652,9 @@ async function renderTurmasPagina() {
                                 );
 
                             if (!turma) {
+
                                 return;
+
                             }
 
                             turmaSelecionada =
@@ -3120,8 +3667,10 @@ async function renderTurmasPagina() {
                             selecionarTurma(
                                 turma
                             );
+
                         }
                     );
+
                 }
             );
 
@@ -3169,6 +3718,7 @@ async function renderTurmasPagina() {
                                 );
 
                                 return;
+
                             }
 
                             const confirmou =
@@ -3178,12 +3728,15 @@ async function renderTurmasPagina() {
                                 );
 
                             if (!confirmou) {
+
                                 return;
+
                             }
 
                             try {
 
-                                btn.disabled = true;
+                                btn.disabled =
+                                    true;
 
                                 btn.innerHTML =
                                     '<i class="fas fa-spinner fa-spin"></i> Apagando...';
@@ -3194,7 +3747,9 @@ async function renderTurmasPagina() {
                                         currentUser.uid
                                     );
 
-                                if (!resultado?.success) {
+                                if (
+                                    !resultado?.success
+                                ) {
 
                                     alert(
                                         '❌ ' +
@@ -3205,20 +3760,25 @@ async function renderTurmasPagina() {
                                     );
 
                                     return;
+
                                 }
 
                                 if (
                                     String(
-                                        obterTurmaAtualId() || ''
+                                        obterTurmaAtualId() ||
+                                        ''
                                     ) ===
                                     String(
                                         turmaId
                                     )
                                 ) {
 
-                                    definirTurmaAtual(null);
+                                    definirTurmaAtual(
+                                        null
+                                    );
 
                                     atualizarTurmaInterface();
+
                                 }
 
                                 alert(
@@ -3241,13 +3801,17 @@ async function renderTurmasPagina() {
 
                             } finally {
 
-                                btn.disabled = false;
+                                btn.disabled =
+                                    false;
 
                                 btn.innerHTML =
                                     '<i class="fas fa-trash"></i> Apagar turma';
+
                             }
+
                         }
                     );
+
                 }
             );
 
@@ -3273,17 +3837,22 @@ async function renderTurmasPagina() {
                 </strong>
 
                 <span>
+
                     ${escapeHtml(
                         error.message ||
                         'Tente novamente.'
                     )}
+
                 </span>
 
             </div>
 
         `;
+
     }
+
 }
+
 
 // ============================================================
 // LOGIN PROFESSOR
@@ -3320,6 +3889,7 @@ loginProfBtn
                 );
 
                 return;
+
             }
 
             try {
@@ -3351,6 +3921,12 @@ loginProfBtn
                             'Email ou senha incorretos.'
                         )
                     );
+
+                } else {
+
+                    loginIniciadoManualmente =
+                        true;
+
                 }
 
             } catch (error) {
@@ -3375,9 +3951,12 @@ loginProfBtn
 
                 loginProfBtn.innerHTML =
                     '<i class="fas fa-right-to-bracket"></i> Entrar';
+
             }
+
         }
     );
+
 
 // ============================================================
 // LOGIN ALUNO
@@ -3414,6 +3993,7 @@ loginAlunoBtn
                 );
 
                 return;
+
             }
 
             try {
@@ -3445,6 +4025,12 @@ loginAlunoBtn
                             'Email ou senha incorretos.'
                         )
                     );
+
+                } else {
+
+                    loginIniciadoManualmente =
+                        true;
+
                 }
 
             } catch (error) {
@@ -3469,9 +4055,12 @@ loginAlunoBtn
 
                 loginAlunoBtn.innerHTML =
                     '<i class="fas fa-right-to-bracket"></i> Entrar';
+
             }
+
         }
     );
+
 
 // ============================================================
 // PREPARAR APÓS LOGIN
@@ -3484,65 +4073,81 @@ async function prepararPosLogin(
 
     if (!user) {
 
-        mostrarSomenteLogin();
+        return;
+
+    }
+
+    const roleFinal =
+        role ||
+        userExtraInfo?.role ||
+        null;
+
+    if (!roleFinal) {
+
+        console.warn(
+            '⚠️ Não foi possível determinar o perfil do usuário ainda.'
+        );
 
         return;
+
     }
+
+    const identificadorSessao =
+        `${user.uid}:${roleFinal}`;
 
     if (
         ultimaSessaoPreparada ===
-        `${user.uid}:${role}` &&
-
+        identificadorSessao &&
         currentUser?.uid ===
         user.uid &&
-
         currentUserRole ===
-        role
+        roleFinal
     ) {
 
         return;
+
     }
 
     currentUser =
         user;
 
     currentUserRole =
-        role;
+        roleFinal;
 
     try {
 
         setDashboardData(
             user,
-            role,
+            roleFinal,
             isUsingLocalData
         );
 
         setMateriaisData(
             user,
-            role,
+            roleFinal,
             isUsingLocalData
         );
 
         setMoinhoData(
             user,
-            role,
+            roleFinal,
             isUsingLocalData
         );
 
         setHistoricoData(
             user,
-            role,
+            roleFinal,
             isUsingLocalData
         );
 
         setMeuPerfilData(
             user,
-            role,
+            roleFinal,
             isUsingLocalData
         );
 
         if (
-            role ===
+            roleFinal ===
             'professor'
         ) {
 
@@ -3551,26 +4156,30 @@ async function prepararPosLogin(
                 isUsingLocalData
             );
 
-        } else {
+        } else if (
+            roleFinal ===
+            'aluno'
+        ) {
 
             setAlunoData(
                 user,
                 isUsingLocalData
             );
+
         }
 
         atualizarUsuarioInterface(
             user,
-            role
+            roleFinal
         );
 
         showConnectionStatus();
 
         ultimaSessaoPreparada =
-            `${user.uid}:${role}`;
+            identificadorSessao;
 
         if (
-            role ===
+            roleFinal ===
             'professor'
         ) {
 
@@ -3580,15 +4189,32 @@ async function prepararPosLogin(
 
             atualizarVisibilidadeTurmas();
 
+            await renderTurmasPagina();
+
             window.showTab(
                 'turmas'
             );
 
             return;
+
         }
 
-        mostrarGate(
+        if (
+            roleFinal ===
             'aluno'
+        ) {
+
+            mostrarGate(
+                'aluno'
+            );
+
+            return;
+
+        }
+
+        console.warn(
+            '⚠️ Perfil desconhecido:',
+            roleFinal
         );
 
     } catch (error) {
@@ -3601,14 +4227,23 @@ async function prepararPosLogin(
         ultimaSessaoPreparada =
             null;
 
-        mostrarSomenteLogin();
+        /*
+         * IMPORTANTE:
+         *
+         * Não fazemos logout em caso de erro
+         * de renderização.
+         *
+         * O Firebase continua autenticado.
+         */
 
-        alert(
-            '❌ Erro preparando o acesso:\n' +
-            error.message
+        console.error(
+            '⚠️ A sessão do Firebase foi mantida.'
         );
+
     }
+
 }
+
 
 // ============================================================
 // VISIBILIDADE DA ABA TURMAS
@@ -3622,7 +4257,9 @@ function atualizarVisibilidadeTurmas() {
         );
 
     if (!btn) {
+
         return;
+
     }
 
     btn.style.display =
@@ -3630,7 +4267,9 @@ function atualizarVisibilidadeTurmas() {
         'professor'
             ? 'flex'
             : 'none';
+
 }
+
 
 // ============================================================
 // INTERFACE DO USUÁRIO
@@ -3647,7 +4286,8 @@ function atualizarUsuarioInterface(
         'Usuário';
 
     const cargo =
-        role === 'professor'
+        role ===
+        'professor'
             ? 'Professor'
             : 'Aluno';
 
@@ -3661,38 +4301,44 @@ function atualizarUsuarioInterface(
             'headerUserRole'
         );
 
-    if (headerUserName) {
+    if (
+        headerUserName
+    ) {
 
         headerUserName.textContent =
             nome;
+
     }
 
-    if (headerUserRole) {
+    if (
+        headerUserRole
+    ) {
 
         headerUserRole.textContent =
             cargo;
+
     }
 
-    if (sidebarUserName) {
+    if (
+        sidebarUserName
+    ) {
 
         sidebarUserName.textContent =
             nome;
+
     }
 
-    if (sidebarUserRole) {
+    if (
+        sidebarUserRole
+    ) {
 
         sidebarUserRole.textContent =
             cargo;
+
     }
 
-    // A atualização dos elementos antigos:
-    // userNameDisplay
-    // userRoleBadge
-    // userTurnoDisplay
-    // foi removida para que "Seu turno" e
-    // "Perfil: Professor" não sejam preenchidos
-    // automaticamente no Dashboard.
 }
+
 
 // ============================================================
 // LOGOUT
@@ -3719,6 +4365,7 @@ logoutBtn
                     );
 
                     return;
+
                 }
 
                 currentUser =
@@ -3746,6 +4393,21 @@ logoutBtn
                     'turmaAtual'
                 );
 
+                localStorage.removeItem(
+                    'turmaAtualId'
+                );
+
+                localStorage.removeItem(
+                    'turmaAtualNome'
+                );
+
+                localStorage.removeItem(
+                    'turmaAtualCodigo'
+                );
+
+                window.senaiTurmaAtualId =
+                    null;
+
                 mostrarSomenteLogin();
 
             } catch (error) {
@@ -3754,9 +4416,12 @@ logoutBtn
                     'Erro ao sair:',
                     error
                 );
+
             }
+
         }
     );
+
 
 // ============================================================
 // NAVEGAÇÃO
@@ -3775,6 +4440,7 @@ window.showTab =
         ) {
 
             return;
+
         }
 
         if (
@@ -3783,6 +4449,7 @@ window.showTab =
         ) {
 
             garantirAbaTurmasProfessor();
+
         }
 
         document
@@ -3797,6 +4464,7 @@ window.showTab =
                         item.dataset.tab ===
                         tabName
                     );
+
                 }
             );
 
@@ -3806,6 +4474,7 @@ window.showTab =
         ) {
 
             closeSidebar();
+
         }
 
         document
@@ -3818,6 +4487,7 @@ window.showTab =
                     tab.classList.remove(
                         'active'
                     );
+
                 }
             );
 
@@ -3840,6 +4510,7 @@ window.showTab =
             );
 
             return;
+
         }
 
         target.classList.add(
@@ -3878,6 +4549,7 @@ window.showTab =
 
             configuracoes:
                 'Configurações'
+
         };
 
         const subtitulos = {
@@ -3902,6 +4574,7 @@ window.showTab =
 
             configuracoes:
                 'Configurações da aparência e da sua conta'
+
         };
 
         if (title) {
@@ -3909,6 +4582,7 @@ window.showTab =
             title.textContent =
                 nomes[tabName] ||
                 'Dashboard';
+
         }
 
         if (subtitle) {
@@ -3916,6 +4590,7 @@ window.showTab =
             subtitle.textContent =
                 subtitulos[tabName] ||
                 'Gerenciamento de plástico';
+
         }
 
         if (
@@ -3924,6 +4599,7 @@ window.showTab =
         ) {
 
             renderTurmasPagina();
+
         }
 
         if (
@@ -3948,18 +4624,24 @@ window.showTab =
                     'Erro ao renderizar perfil:',
                     error
                 );
+
             }
+
         }
+
     };
 
-    // ============================================================
+
+// ============================================================
 // SIDEBAR MOBILE
 // ============================================================
 
 function openSidebar() {
 
     if (!sidebar) {
+
         return;
+
     }
 
     sidebar.classList.add(
@@ -3978,6 +4660,7 @@ function openSidebar() {
         'aria-expanded',
         'true'
     );
+
 }
 
 function closeSidebar() {
@@ -3987,6 +4670,7 @@ function closeSidebar() {
         sidebar.classList.remove(
             'open'
         );
+
     }
 
     sidebarOverlay?.classList.remove(
@@ -4001,6 +4685,7 @@ function closeSidebar() {
         'aria-expanded',
         'false'
     );
+
 }
 
 function toggleSidebarMenu() {
@@ -4016,7 +4701,9 @@ function toggleSidebarMenu() {
     } else {
 
         openSidebar();
+
     }
+
 }
 
 window.toggleSidebar =
@@ -4037,6 +4724,7 @@ mobileMenuBtn
             event.stopPropagation();
 
             toggleSidebarMenu();
+
         }
     );
 
@@ -4056,20 +4744,26 @@ document.addEventListener(
         ) {
 
             closeSidebar();
+
         }
+
     }
 );
+
 
 // ============================================================
 // VOLTAR DA SELEÇÃO
 // ============================================================
 
-async function voltarDaSelecaoTurma(event) {
+async function voltarDaSelecaoTurma(
+    event
+) {
 
     if (event) {
 
         event.preventDefault();
         event.stopPropagation();
+
     }
 
     console.log(
@@ -4081,6 +4775,7 @@ async function voltarDaSelecaoTurma(event) {
         mostrarSomenteLogin();
 
         return;
+
     }
 
     if (
@@ -4101,6 +4796,7 @@ async function voltarDaSelecaoTurma(event) {
 
             gate.style.display =
                 'none';
+
         }
 
         turmaSelecionada =
@@ -4119,6 +4815,7 @@ async function voltarDaSelecaoTurma(event) {
         await renderTurmasPagina();
 
         return;
+
     }
 
     if (
@@ -4146,6 +4843,7 @@ async function voltarDaSelecaoTurma(event) {
                 );
 
                 return;
+
             }
 
         } catch (error) {
@@ -4154,6 +4852,7 @@ async function voltarDaSelecaoTurma(event) {
                 'Erro ao voltar para o login:',
                 error
             );
+
         }
 
         currentUser =
@@ -4199,10 +4898,13 @@ async function voltarDaSelecaoTurma(event) {
         mostrarSomenteLogin();
 
         return;
+
     }
 
     mostrarSomenteLogin();
+
 }
+
 
 // ============================================================
 // BOTÕES DE VOLTAR
@@ -4218,14 +4920,18 @@ document.addEventListener(
             );
 
         if (!btn) {
+
             return;
+
         }
 
         voltarDaSelecaoTurma(
             event
         );
+
     }
 );
+
 
 // ============================================================
 // TEMA
@@ -4242,6 +4948,7 @@ window.toggleTheme =
             'tema',
             'escuro'
         );
+
     };
 
 document.body.classList.add(
@@ -4253,6 +4960,7 @@ localStorage.setItem(
     'escuro'
 );
 
+
 // ============================================================
 // MODAIS
 // ============================================================
@@ -4260,26 +4968,39 @@ localStorage.setItem(
 function fecharTodosModais() {
 
     [
+
         editModal,
+
         removeModal,
+
         cadastrarProfModal,
+
         cadastrarAlunoModal,
+
         esqueciSenhaModal,
+
         gerenciarAlunosModal,
+
         gerenciarProfessoresModal,
+
         criarTurmaModal
+
     ]
-    .forEach(
-        modal => {
+        .forEach(
+            modal => {
 
-            if (modal) {
+                if (modal) {
 
-                modal.style.display =
-                    'none';
+                    modal.style.display =
+                        'none';
+
+                }
+
             }
-        }
-    );
+        );
+
 }
+
 
 // ============================================================
 // FECHAR MODAIS PELOS BOTÕES
@@ -4301,8 +5022,10 @@ document
                 'click',
                 fecharTodosModais
             );
+
         }
     );
+
 
 // ============================================================
 // CANCELAR MODAL EDITAR
@@ -4320,9 +5043,12 @@ document
 
                 editModal.style.display =
                     'none';
+
             }
+
         }
     );
+
 
 // ============================================================
 // CANCELAR MODAL REMOVER
@@ -4340,9 +5066,12 @@ document
 
                 removeModal.style.display =
                     'none';
+
             }
+
         }
     );
+
 
 // ============================================================
 // FECHAR AO CLICAR FORA
@@ -4353,31 +5082,44 @@ window.addEventListener(
     event => {
 
         [
+
             editModal,
+
             removeModal,
+
             cadastrarProfModal,
+
             cadastrarAlunoModal,
+
             esqueciSenhaModal,
+
             gerenciarAlunosModal,
+
             gerenciarProfessoresModal,
+
             criarTurmaModal
+
         ]
-        .forEach(
-            modal => {
+            .forEach(
+                modal => {
 
-                if (
-                    modal &&
-                    event.target ===
-                    modal
-                ) {
+                    if (
+                        modal &&
+                        event.target ===
+                        modal
+                    ) {
 
-                    modal.style.display =
-                        'none';
+                        modal.style.display =
+                            'none';
+
+                    }
+
                 }
-            }
-        );
+            );
+
     }
 );
+
 
 // ============================================================
 // EXCLUIR CONTA
@@ -4393,7 +5135,9 @@ document.addEventListener(
             );
 
         if (!btn) {
+
             return;
+
         }
 
         if (!currentUser) {
@@ -4403,6 +5147,7 @@ document.addEventListener(
             );
 
             return;
+
         }
 
         const confirmou =
@@ -4412,7 +5157,9 @@ document.addEventListener(
             );
 
         if (!confirmou) {
+
             return;
+
         }
 
         try {
@@ -4426,9 +5173,7 @@ document.addEventListener(
             const result =
                 await excluirMinhaConta();
 
-            if (
-                !result?.success
-            ) {
+            if (!result?.success) {
 
                 alert(
                     '❌ Não foi possível excluir sua conta:\n\n' +
@@ -4439,6 +5184,7 @@ document.addEventListener(
                 );
 
                 return;
+
             }
 
             alert(
@@ -4487,9 +5233,12 @@ document.addEventListener(
 
             btn.innerHTML =
                 '<i class="fas fa-trash"></i> Excluir minha conta';
+
         }
+
     }
 );
+
 
 // ============================================================
 // OBSERVAR AUTENTICAÇÃO
@@ -4503,142 +5252,246 @@ onAuthStateChange(
             state
         );
 
-        if (
-            state?.isLoggedIn
-        ) {
-
-            if (
-                !loginIniciadoManualmente
-            ) {
-
-                console.log(
-                    '⚠️ Sessão antiga detectada. Voltando ao login.'
-                );
-
-                try {
-
-                    await logoutUser();
-
-                } catch (error) {
-
-                    console.error(
-                        'Erro limpando sessão antiga:',
-                        error
-                    );
-                }
-
-                currentUser =
-                    null;
-
-                currentUserRole =
-                    null;
-
-                currentTurma =
-                    null;
-
-                turmaSelecionada =
-                    null;
-
-                turmasDisponiveis =
-                    [];
-
-                ultimaSessaoPreparada =
-                    null;
-
-                mostrarSomenteLogin();
-
-                return;
-            }
-
-            if (
-                state.extraInfo
-            ) {
-
-                userExtraInfo.nome =
-                    state.extraInfo.nome ||
-                    '';
-
-                userExtraInfo.turno =
-                    state.extraInfo.turno ||
-                    '';
-
-                userExtraInfo.professoresVinculados =
-                    state.extraInfo.professoresVinculados ||
-                    [];
-
-                userExtraInfo.historicoLogins =
-                    state.extraInfo.historicoLogins ||
-                    [];
-
-                userExtraInfo.dataHoraLogin =
-                    state.extraInfo.dataHoraLogin ||
-                    null;
-
-                userExtraInfo.turmasVinculadas =
-                    state.extraInfo.turmasVinculadas ||
-                    {};
-
-                userExtraInfo.turmaAtualId =
-                    state.extraInfo.turmaAtualId ||
-                    null;
-
-                userExtraInfo.turmaAtualNome =
-                    state.extraInfo.turmaAtualNome ||
-                    '';
-
-                userExtraInfo.turmaAtualCodigo =
-                    state.extraInfo.turmaAtualCodigo ||
-                    '';
-            }
-
-            await prepararPosLogin(
-                state.user,
-                state.role
-            );
+        if (processandoEstadoAuth) {
 
             return;
+
         }
 
-        currentUser =
-            null;
+        processandoEstadoAuth =
+            true;
 
-        currentUserRole =
-            null;
+        try {
 
-        currentTurma =
-            null;
+            // ====================================================
+            // USUÁRIO LOGADO
+            // ====================================================
 
-        turmaSelecionada =
-            null;
+            if (
+                state?.isLoggedIn &&
+                state.user
+            ) {
 
-        turmasDisponiveis =
-            [];
+                currentUser =
+                    state.user;
 
-        ultimaSessaoPreparada =
-            null;
+                // --------------------------------------------
+                // Atualizar dados extras
+                // --------------------------------------------
 
-        loginIniciadoManualmente =
-            false;
+                if (
+                    state.extraInfo
+                ) {
 
-        localStorage.removeItem(
-            'turmaAtual'
-        );
+                    userExtraInfo.nome =
+                        state.extraInfo.nome || '';
 
-        localStorage.removeItem(
-            'turmaAtualId'
-        );
+                    userExtraInfo.turno =
+                        state.extraInfo.turno || '';
 
-        localStorage.removeItem(
-            'turmaAtualNome'
-        );
+                    userExtraInfo.professoresVinculados =
+                        state.extraInfo.professoresVinculados || [];
 
-        localStorage.removeItem(
-            'turmaAtualCodigo'
-        );
+                    userExtraInfo.historicoLogins =
+                        state.extraInfo.historicoLogins || [];
 
-        mostrarSomenteLogin();
+                    userExtraInfo.dataHoraLogin =
+                        state.extraInfo.dataHoraLogin || null;
+
+                    userExtraInfo.turmasVinculadas =
+                        state.extraInfo.turmasVinculadas || {};
+
+                    userExtraInfo.turmaAtualId =
+                        state.extraInfo.turmaAtualId || null;
+
+                    userExtraInfo.turmaAtualNome =
+                        state.extraInfo.turmaAtualNome || '';
+
+                    userExtraInfo.turmaAtualCodigo =
+                        state.extraInfo.turmaAtualCodigo || '';
+
+                    userExtraInfo.role =
+                        state.extraInfo.role ||
+                        userExtraInfo.role ||
+                        '';
+
+                }
+
+                // --------------------------------------------
+                // Descobrir o perfil
+                // --------------------------------------------
+
+                currentUserRole =
+                    state.role ||
+                    state.extraInfo?.role ||
+                    userExtraInfo?.role ||
+                    currentUserRole ||
+                    null;
+
+                // --------------------------------------------
+                // Se o Firebase ainda não entregou o role,
+                // NÃO faz logout.
+                // --------------------------------------------
+
+                if (!currentUserRole) {
+
+                    console.warn(
+                        '⚠️ Usuário autenticado, aguardando perfil...'
+                    );
+
+                    authEstadoInicializado =
+                        true;
+
+                    return;
+
+                }
+
+                // --------------------------------------------
+                // Restaurar turma salva localmente
+                // --------------------------------------------
+
+                const turmaSalva =
+                    localStorage.getItem(
+                        'turmaAtual'
+                    );
+
+                if (
+                    turmaSalva &&
+                    !currentTurma
+                ) {
+
+                    try {
+
+                        const turmaParseada =
+                            JSON.parse(
+                                turmaSalva
+                            );
+
+                        if (
+                            turmaParseada?.id
+                        ) {
+
+                            currentTurma =
+                                turmaParseada;
+
+                            turmaSelecionada =
+                                turmaParseada;
+
+                            window.senaiTurmaAtualId =
+                                String(
+                                    turmaParseada.id
+                                );
+
+                        }
+
+                    } catch (error) {
+
+                        console.warn(
+                            '⚠️ Não foi possível restaurar a turma salva:',
+                            error
+                        );
+
+                    }
+
+                }
+
+                // --------------------------------------------
+                // Preparar sessão
+                // --------------------------------------------
+
+                await prepararPosLogin(
+                    state.user,
+                    currentUserRole
+                );
+
+                authEstadoInicializado =
+                    true;
+
+                return;
+
+            }
+
+            // ====================================================
+            // USUÁRIO REALMENTE DESLOGADO
+            // ====================================================
+
+            console.log(
+                '🔴 Firebase informou que o usuário está deslogado.'
+            );
+
+            currentUser =
+                null;
+
+            currentUserRole =
+                null;
+
+            currentTurma =
+                null;
+
+            turmaSelecionada =
+                null;
+
+            turmasDisponiveis =
+                [];
+
+            ultimaSessaoPreparada =
+                null;
+
+            loginIniciadoManualmente =
+                false;
+
+            localStorage.removeItem(
+                'turmaAtual'
+            );
+
+            localStorage.removeItem(
+                'turmaAtualId'
+            );
+
+            localStorage.removeItem(
+                'turmaAtualNome'
+            );
+
+            localStorage.removeItem(
+                'turmaAtualCodigo'
+            );
+
+            window.senaiTurmaAtualId =
+                null;
+
+            mostrarSomenteLogin();
+
+            authEstadoInicializado =
+                true;
+
+        } catch (error) {
+
+            /*
+             * IMPORTANTE:
+             *
+             * Um erro interno de carregamento
+             * NÃO significa que o usuário saiu.
+             */
+
+            console.error(
+                '❌ Erro processando estado de autenticação:',
+                error
+            );
+
+            console.warn(
+                '⚠️ Sessão não será encerrada automaticamente.'
+            );
+
+        } finally {
+
+            processandoEstadoAuth =
+                false;
+
+        }
+
     }
 );
+
 
 // ============================================================
 // RESPONSIVIDADE
@@ -4654,15 +5507,16 @@ window.addEventListener(
         ) {
 
             closeSidebar();
+
         }
+
     }
 );
+
 
 // ============================================================
 // INÍCIO
 // ============================================================
-
-mostrarSomenteLogin();
 
 console.log(
     '🚀 SENAI Plásticos iniciado!'

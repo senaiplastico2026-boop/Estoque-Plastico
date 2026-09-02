@@ -1,13 +1,36 @@
 import { db } from '../firebaseConfig.js';
-import { isOnline } from '../auth.js';
-import { ref, get, set, update } from "firebase/database";
 
-let currentUserRole = null, currentUserGlobal = null, isUsingLocalData = false;
+import {
+    isOnline,
+    userExtraInfo
+} from '../auth.js';
 
-export function setUserData(user, role, localFlag) {
+import {
+    ref,
+    get,
+    set,
+    update
+} from "firebase/database";
+
+
+let currentUserRole = null,
+    currentUserGlobal = null,
+    isUsingLocalData = false;
+
+
+export function setUserData(
+    user,
+    role,
+    localFlag
+) {
+
     currentUserGlobal = user;
+
     currentUserRole = role;
-    isUsingLocalData = localFlag || false;
+
+    isUsingLocalData =
+        localFlag || false;
+
 }
 
 
@@ -27,15 +50,45 @@ function obterTurmaId() {
 
 
 // ============================================================
+// USUÁRIO ATUAL
+// ============================================================
+
+function obterEditorAtual() {
+
+    const nome =
+        userExtraInfo?.nome ||
+        currentUserGlobal?.displayName ||
+        currentUserGlobal?.email?.split('@')[0] ||
+        'Usuário';
+
+    const perfil =
+        currentUserRole === 'professor'
+            ? 'Professor'
+            : currentUserRole === 'aluno'
+                ? 'Aluno'
+                : 'Usuário';
+
+    return `${nome} - ${perfil}`;
+
+}
+
+
+// ============================================================
 // DADOS LOCAIS
 // ============================================================
 
 let localData = {
+
     moinho: {
+
         materiais: [],
+
         capacidadeMax: null,
+
         historico: []
+
     }
+
 };
 
 
@@ -54,9 +107,13 @@ async function getMoinho() {
         if (!turmaId) {
 
             return {
+
                 materiais: [],
+
                 capacidadeMax: 900,
+
                 historico: []
+
             };
 
         }
@@ -89,9 +146,13 @@ async function getMoinho() {
 
         return (
             localData.moinho || {
+
                 materiais: [],
+
                 capacidadeMax: 900,
+
                 historico: []
+
             }
         );
 
@@ -106,9 +167,13 @@ async function getMoinho() {
 
         return (
             localData.moinho || {
+
                 materiais: [],
+
                 capacidadeMax: 900,
+
                 historico: []
+
             }
         );
 
@@ -121,7 +186,9 @@ async function getMoinho() {
 // SALVAR MOINHO DA TURMA ATUAL
 // ============================================================
 
-async function saveMoinho(data) {
+async function saveMoinho(
+    data
+) {
 
     try {
 
@@ -180,6 +247,8 @@ async function saveMoinho(data) {
         localData.moinho =
             data;
 
+        throw error;
+
     }
 
 }
@@ -234,8 +303,12 @@ export async function renderMoinho() {
 
 
         const materiais =
-            Array.isArray(moinhoData.materiais)
+            Array.isArray(
+                moinhoData.materiais
+            )
+
                 ? moinhoData.materiais
+
                 : [];
 
 
@@ -243,33 +316,49 @@ export async function renderMoinho() {
             Number(
                 moinhoData.capacidadeMax
             ) > 0
-                ? Number(moinhoData.capacidadeMax)
+
+                ? Number(
+                    moinhoData.capacidadeMax
+                )
+
                 : 900;
 
 
         const totalPeso =
             materiais.reduce(
-                (acc, m) =>
+                (
+                    acc,
+                    m
+                ) =>
                     acc +
-                    (Number(m.peso) || 0),
+                    (
+                        Number(
+                            m.peso
+                        ) || 0
+                    ),
                 0
             );
 
 
         const percent =
             Math.min(
-                (totalPeso / capacidadeMax) * 100,
+                (
+                    totalPeso /
+                    capacidadeMax
+                ) * 100,
                 100
             );
 
 
         const moinhoCheio =
-            totalPeso >= capacidadeMax;
+            totalPeso >=
+            capacidadeMax;
 
 
         const capacidadeDisponivel =
             Math.max(
-                capacidadeMax - totalPeso,
+                capacidadeMax -
+                totalPeso,
                 0
             );
 
@@ -301,10 +390,13 @@ export async function renderMoinho() {
 
 
                 materiaisDisponiveis =
-                    Object.keys(data).map(
+                    Object.keys(
+                        data
+                    ).map(
                         key => ({
 
-                            id: key,
+                            id:
+                                key,
 
                             turmaId:
                                 turmaId,
@@ -329,14 +421,23 @@ export async function renderMoinho() {
         const acoes = [
 
             'Moagem',
+
             'Separação',
+
             'Lavagem',
+
             'Secagem',
+
             'Extrusão',
+
             'Granulação',
+
             'Prensagem',
+
             'Injeção',
+
             'Reciclagem',
+
             'Outro'
 
         ];
@@ -374,6 +475,7 @@ export async function renderMoinho() {
 
                     ${
                         currentUserRole === 'professor'
+
                             ? `
 
                                 <button
@@ -395,6 +497,7 @@ export async function renderMoinho() {
                                 </button>
 
                               `
+
                             : ''
                     }
 
@@ -416,9 +519,13 @@ export async function renderMoinho() {
                                         ? '#fffbeb'
                                         : '#ecfdf5'
                         };
+
                         padding:20px;
+
                         border-radius:16px;
+
                         margin-bottom:20px;
+
                         border:2px solid ${
                             moinhoCheio
                                 ? '#ef4444'
@@ -518,7 +625,11 @@ export async function renderMoinho() {
 
                         <div
                             style="
-                                width:${Math.min(percent, 100)}%;
+                                width:${Math.min(
+                                    percent,
+                                    100
+                                )}%;
+
                                 background:${
                                     moinhoCheio
                                         ? '#dc2626'
@@ -528,7 +639,9 @@ export async function renderMoinho() {
                                                 ? '#f59e0b'
                                                 : '#10b981'
                                 };
+
                                 height:100%;
+
                                 transition:width 0.5s;
                             "
                         ></div>
@@ -538,6 +651,7 @@ export async function renderMoinho() {
 
                     ${
                         moinhoCheio
+
                             ? `
 
                                 <div
@@ -559,6 +673,7 @@ export async function renderMoinho() {
                                 </div>
 
                               `
+
                             : `
 
                                 <div
@@ -654,6 +769,7 @@ export async function renderMoinho() {
                                     type="number"
                                     id="newMoinhoPeso"
                                     step="0.001"
+                                    min="0"
                                 >
 
                             </div>
@@ -678,6 +794,7 @@ export async function renderMoinho() {
 
                         <button
                             id="btnAddMoinho"
+                            type="button"
                             class="btn-primary"
                             style="width:100%;"
                         >
@@ -777,6 +894,7 @@ export async function renderMoinho() {
                                     type="number"
                                     id="devolverQuantidade"
                                     step="0.001"
+                                    min="0"
                                     placeholder="0.000"
                                 >
 
@@ -787,6 +905,7 @@ export async function renderMoinho() {
 
                         <button
                             id="btnDevolverMoinho"
+                            type="button"
                             class="btn-primary"
                             style="
                                 width:auto;
@@ -886,6 +1005,7 @@ export async function renderMoinho() {
 
                         <button
                             id="btnProcessarMoinho"
+                            type="button"
                             class="btn-warning"
                         >
 
@@ -898,6 +1018,7 @@ export async function renderMoinho() {
 
                         <button
                             id="btnLimparMoinho"
+                            type="button"
                             class="btn-danger"
                         >
 
@@ -910,6 +1031,7 @@ export async function renderMoinho() {
 
                         <button
                             id="btnRegistrarAcao"
+                            type="button"
                             class="btn-primary"
                         >
 
@@ -951,10 +1073,15 @@ export async function renderMoinho() {
                             <tr>
 
                                 <th>Código</th>
+
                                 <th>Material</th>
+
                                 <th>Peso (T)</th>
+
                                 <th>Fornecedor</th>
+
                                 <th>Data</th>
+
                                 <th>Ações</th>
 
                             </tr>
@@ -967,15 +1094,20 @@ export async function renderMoinho() {
                             ${
                                 materiais
                                     .map(
-                                        (m, index) => `
+                                        (
+                                            m,
+                                            index
+                                        ) => `
 
                                         <tr
                                             data-material="${(
                                                 m.material || ''
                                             ).toLowerCase()}"
+
                                             data-codigo="${(
                                                 m.codigo || ''
                                             ).toLowerCase()}"
+
                                             data-fornecedor="${(
                                                 m.fornecedor || ''
                                             ).toLowerCase()}"
@@ -1013,6 +1145,7 @@ export async function renderMoinho() {
                                             <td>
 
                                                 <button
+                                                    type="button"
                                                     class="btn-edit edit-moinho-item"
                                                     data-index="${index}"
                                                     data-id="${m.id || ''}"
@@ -1028,6 +1161,7 @@ export async function renderMoinho() {
 
 
                                                 <button
+                                                    type="button"
                                                     class="btn-danger remove-moinho-item"
                                                     data-index="${index}"
                                                     data-id="${m.id || ''}"
@@ -1050,17 +1184,21 @@ export async function renderMoinho() {
 
                             ${
                                 materiais.length === 0
+
                                     ? `
 
                                         <tr>
 
                                             <td colspan="6">
+
                                                 Nenhum material
+
                                             </td>
 
                                         </tr>
 
                                     `
+
                                     : ''
                             }
 
@@ -1097,10 +1235,16 @@ export async function renderMoinho() {
                             <tr>
 
                                 <th>Data</th>
+
                                 <th>Ação</th>
+
                                 <th>Material</th>
+
                                 <th>Peso (T)</th>
+
                                 <th>Detalhes</th>
+
+                                <th>Editado por</th>
 
                             </tr>
 
@@ -1110,8 +1254,13 @@ export async function renderMoinho() {
                         <tbody>
 
                             ${
-                                (moinhoData.historico || [])
-                                    .slice(-50)
+                                (
+                                    moinhoData.historico ||
+                                    []
+                                )
+                                    .slice(
+                                        -50
+                                    )
                                     .reverse()
                                     .map(
                                         h => `
@@ -1119,7 +1268,15 @@ export async function renderMoinho() {
                                         <tr>
 
                                             <td>
-                                                ${h.data || new Date().toLocaleString()}
+
+                                                ${
+                                                    h.data ||
+                                                    new Date()
+                                                        .toLocaleString(
+                                                            'pt-BR'
+                                                        )
+                                                }
+
                                             </td>
 
 
@@ -1128,18 +1285,26 @@ export async function renderMoinho() {
                                                 <span
                                                     class="${
                                                         h.tipo === 'entrada'
+
                                                             ? 'text-success'
+
                                                             : h.tipo === 'saida'
+
                                                                 ? 'text-danger'
+
                                                                 : 'text-warning'
                                                     }"
                                                 >
 
                                                     ${
                                                         h.tipo === 'entrada'
+
                                                             ? '➕ Entrada'
+
                                                             : h.tipo === 'saida'
+
                                                                 ? '➖ Saída'
+
                                                                 : '📋 Ação'
                                                     }
 
@@ -1149,17 +1314,35 @@ export async function renderMoinho() {
 
 
                                             <td>
+
                                                 ${h.material || '-'}
+
                                             </td>
 
 
                                             <td>
+
                                                 ${h.peso || 0}
+
                                             </td>
 
 
                                             <td>
+
                                                 ${h.acao || '-'}
+
+                                            </td>
+
+
+                                            <td>
+
+                                                ${
+                                                    h.editadoPor ||
+                                                    h.usuarioNome ||
+                                                    h.nomeUsuario ||
+                                                    '-'
+                                                }
+
                                             </td>
 
                                         </tr>
@@ -1171,18 +1354,25 @@ export async function renderMoinho() {
 
 
                             ${
-                                !(moinhoData.historico || []).length
+                                !(
+                                    moinhoData.historico ||
+                                    []
+                                ).length
+
                                     ? `
 
                                         <tr>
 
-                                            <td colspan="5">
+                                            <td colspan="6">
+
                                                 Nenhum registro
+
                                             </td>
 
                                         </tr>
 
                                     `
+
                                     : ''
                             }
 
@@ -1230,10 +1420,15 @@ export async function renderMoinho() {
                             <tr>
 
                                 <th>Código</th>
+
                                 <th>Nome</th>
+
                                 <th>Qtd (kg)</th>
+
                                 <th>Fornecedor</th>
+
                                 <th>Categoria</th>
+
                                 <th>Disponível</th>
 
                             </tr>
@@ -1252,9 +1447,11 @@ export async function renderMoinho() {
                                             data-nome="${(
                                                 m.nome || ''
                                             ).toLowerCase()}"
+
                                             data-codigo="${(
                                                 m.codigo || ''
                                             ).toLowerCase()}"
+
                                             data-fornecedor="${(
                                                 m.fornecedor || ''
                                             ).toLowerCase()}"
@@ -1270,22 +1467,30 @@ export async function renderMoinho() {
 
 
                                             <td>
+
                                                 ${m.nome || '-'}
+
                                             </td>
 
 
                                             <td>
+
                                                 ${m.quantidade || 0}
+
                                             </td>
 
 
                                             <td>
+
                                                 ${m.fornecedor || '-'}
+
                                             </td>
 
 
                                             <td>
+
                                                 ${m.categoria || '-'}
+
                                             </td>
 
 
@@ -1293,15 +1498,23 @@ export async function renderMoinho() {
 
                                                 <span
                                                     class="${
-                                                        Number(m.quantidade) > 0
+                                                        Number(
+                                                            m.quantidade
+                                                        ) > 0
+
                                                             ? 'text-success'
+
                                                             : 'text-danger'
                                                     }"
                                                 >
 
                                                     ${
-                                                        Number(m.quantidade) > 0
+                                                        Number(
+                                                            m.quantidade
+                                                        ) > 0
+
                                                             ? '✅ Disponível'
+
                                                             : '❌ Indisponível'
                                                     }
 
@@ -1319,17 +1532,21 @@ export async function renderMoinho() {
 
                             ${
                                 materiaisDisponiveis.length === 0
+
                                     ? `
 
                                         <tr>
 
                                             <td colspan="6">
+
                                                 Nenhum material
+
                                             </td>
 
                                         </tr>
 
                                     `
+
                                     : ''
                             }
 
@@ -1510,12 +1727,21 @@ export async function renderMoinho() {
                                 row.style.display =
 
                                     (
-                                        nome.includes(search) ||
-                                        codigo.includes(search) ||
-                                        fornecedor.includes(search)
+                                        nome.includes(
+                                            search
+                                        ) ||
+
+                                        codigo.includes(
+                                            search
+                                        ) ||
+
+                                        fornecedor.includes(
+                                            search
+                                        )
                                     )
 
                                         ? ''
+
                                         : 'none';
 
                             }
@@ -1590,159 +1816,271 @@ export async function renderMoinho() {
                 'click',
                 async () => {
 
-                    const codigo =
+                    try {
+
+                        const codigo =
+                            document
+                                .getElementById(
+                                    'newMoinhoCodigo'
+                                )
+                                ?.value
+                                .trim() ||
+                            '';
+
+
+                        const material =
+                            document
+                                .getElementById(
+                                    'newMoinhoMaterial'
+                                )
+                                ?.value
+                                .trim() ||
+                            '';
+
+
+                        const peso =
+                            parseFloat(
+                                document
+                                    .getElementById(
+                                        'newMoinhoPeso'
+                                    )
+                                    ?.value
+                            );
+
+
+                        const fornecedor =
+                            document
+                                .getElementById(
+                                    'newMoinhoFornecedor'
+                                )
+                                ?.value
+                                .trim() ||
+                            '';
+
+
+                        if (!material) {
+
+                            alert(
+                                '⚠️ Informe o material.'
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            isNaN(peso) ||
+                            peso <= 0
+                        ) {
+
+                            alert(
+                                '⚠️ Informe um peso válido maior que zero.'
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            totalPeso +
+                            peso >
+                            capacidadeMax
+                        ) {
+
+                            alert(
+                                `❌ Capacidade excedida!\n\nDisponível: ${capacidadeDisponivel.toFixed(3)} T`
+                            );
+
+                            return;
+
+                        }
+
+
+                        const acaoInput =
+                            document
+                                .getElementById(
+                                    'acaoMoinhoInput'
+                                )
+                                ?.value
+                                .trim() ||
+                            '';
+
+
+                        const acao =
+                            acaoInput ||
+                            'Adição manual';
+
+
+                        const editor =
+                            obterEditorAtual();
+
+
+                        const agora =
+                            new Date()
+                                .toLocaleString(
+                                    'pt-BR'
+                                );
+
+
+                        const novoItem = {
+
+                            codigo:
+                                codigo,
+
+                            material:
+                                material,
+
+                            peso:
+                                peso,
+
+                            fornecedor:
+                                fornecedor,
+
+                            data:
+                                agora,
+
+                            turmaId:
+                                turmaId,
+
+                            editadoPor:
+                                editor,
+
+                            editadoPorUid:
+                                currentUserGlobal?.uid ||
+                                ''
+
+                        };
+
+
+                        const novosMateriais =
+                            [
+
+                                ...materiais,
+
+                                novoItem
+
+                            ];
+
+
+                        const novoHistorico =
+                            [
+
+                                ...(moinhoData.historico || []),
+
+                                {
+
+                                    tipo:
+                                        'entrada',
+
+                                    material:
+                                        material,
+
+                                    peso:
+                                        peso,
+
+                                    data:
+                                        agora,
+
+                                    acao:
+                                        acao,
+
+                                    turmaId:
+                                        turmaId,
+
+                                    editadoPor:
+                                        editor,
+
+                                    editadoPorUid:
+                                        currentUserGlobal?.uid ||
+                                        ''
+
+                                }
+
+                            ];
+
+
+                        await saveMoinho({
+
+                            materiais:
+                                novosMateriais,
+
+                            capacidadeMax:
+                                capacidadeMax,
+
+                            historico:
+                                novoHistorico,
+
+                            turmaId:
+                                turmaId
+
+                        });
+
+
+                        alert(
+                            '✅ Adicionado ao moinho!'
+                        );
+
+
                         document
                             .getElementById(
                                 'newMoinhoCodigo'
                             )
-                            .value;
+                            .value = '';
 
 
-                    const material =
                         document
                             .getElementById(
                                 'newMoinhoMaterial'
                             )
-                            .value;
+                            .value = '';
 
 
-                    const peso =
-                        parseFloat(
-                            document
-                                .getElementById(
-                                    'newMoinhoPeso'
-                                )
-                                .value
-                        );
+                        document
+                            .getElementById(
+                                'newMoinhoPeso'
+                            )
+                            .value = '';
 
 
-                    const fornecedor =
                         document
                             .getElementById(
                                 'newMoinhoFornecedor'
                             )
-                            .value;
+                            .value = '';
 
 
-                    if (
-                        !material ||
-                        isNaN(peso) ||
-                        peso <= 0
-                    ) {
-
-                        alert(
-                            'Preencha material e peso!'
-                        );
-
-                        return;
-
-                    }
-
-
-                    if (
-                        totalPeso + peso >
-                        capacidadeMax
-                    ) {
-
-                        alert(
-                            `Capacidade excedida! Disponível: ${capacidadeDisponivel.toFixed(3)} T`
-                        );
-
-                        return;
-
-                    }
-
-
-                    const acao =
                         document
                             .getElementById(
                                 'acaoMoinhoInput'
                             )
-                            .value ||
-                        'Adição manual';
+                            .value = '';
 
 
-                    const novoItem = {
-
-                        codigo,
-
-                        material,
-
-                        peso,
-
-                        fornecedor,
-
-                        data:
-                            new Date()
-                                .toLocaleString(
-                                    'pt-BR'
-                                ),
-
-                        turmaId:
-                            turmaId
-
-                    };
+                        document
+                            .getElementById(
+                                'acaoMoinhoSelect'
+                            )
+                            .value = '';
 
 
-                    const novosMateriais =
-                        [
-                            ...materiais,
-                            novoItem
-                        ];
+                        await renderMoinho();
+
+                    } catch (error) {
+
+                        console.error(
+                            '❌ Erro ao adicionar ao moinho:',
+                            error
+                        );
 
 
-                    const novoHistorico =
-                        [
+                        alert(
+                            '❌ Não foi possível adicionar ao moinho:\n\n' +
+                            error.message
+                        );
 
-                            ...(moinhoData.historico || []),
-
-                            {
-
-                                tipo:
-                                    'entrada',
-
-                                material,
-
-                                peso,
-
-                                data:
-                                    new Date()
-                                        .toLocaleString(
-                                            'pt-BR'
-                                        ),
-
-                                acao,
-
-                                turmaId:
-                                    turmaId
-
-                            }
-
-                        ];
-
-
-                    await saveMoinho({
-
-                        materiais:
-                            novosMateriais,
-
-                        capacidadeMax,
-
-                        historico:
-                            novoHistorico,
-
-                        turmaId:
-                            turmaId
-
-                    });
-
-
-                    alert(
-                        '✅ Adicionado ao moinho!'
-                    );
-
-
-                    renderMoinho();
+                    }
 
                 }
             );
@@ -1770,19 +2108,19 @@ export async function renderMoinho() {
 
 
                             const nome =
-                                this.dataset.nome;
+                                this.dataset.nome || '';
 
 
                             const codigo =
-                                this.dataset.codigo;
+                                this.dataset.codigo || '';
 
 
                             const peso =
-                                this.dataset.peso;
+                                this.dataset.peso || '0';
 
 
                             const fornecedor =
-                                this.dataset.fornecedor;
+                                this.dataset.fornecedor || '';
 
 
                             document.getElementById(
@@ -1804,7 +2142,7 @@ export async function renderMoinho() {
                                     <input
                                         type="text"
                                         id="editMoinhoCodigo"
-                                        value="${codigo || ''}"
+                                        value="${codigo}"
                                     >
 
                                 </div>
@@ -1819,7 +2157,7 @@ export async function renderMoinho() {
                                     <input
                                         type="text"
                                         id="editMoinhoMaterial"
-                                        value="${nome || ''}"
+                                        value="${nome}"
                                     >
 
                                 </div>
@@ -1835,7 +2173,8 @@ export async function renderMoinho() {
                                         type="number"
                                         id="editMoinhoPeso"
                                         step="0.001"
-                                        value="${peso || 0}"
+                                        min="0"
+                                        value="${peso}"
                                     >
 
                                 </div>
@@ -1850,7 +2189,7 @@ export async function renderMoinho() {
                                     <input
                                         type="text"
                                         id="editMoinhoFornecedor"
-                                        value="${fornecedor || ''}"
+                                        value="${fornecedor}"
                                     >
 
                                 </div>
@@ -1869,132 +2208,179 @@ export async function renderMoinho() {
                             ).onclick =
                                 async () => {
 
-                                    const newCodigo =
-                                        document
-                                            .getElementById(
-                                                'editMoinhoCodigo'
-                                            )
-                                            .value;
+                                    try {
 
-
-                                    const newMaterial =
-                                        document
-                                            .getElementById(
-                                                'editMoinhoMaterial'
-                                            )
-                                            .value;
-
-
-                                    const newPeso =
-                                        parseFloat(
+                                        const newCodigo =
                                             document
                                                 .getElementById(
-                                                    'editMoinhoPeso'
+                                                    'editMoinhoCodigo'
                                                 )
                                                 .value
-                                        );
+                                                .trim();
 
 
-                                    const newFornecedor =
-                                        document
-                                            .getElementById(
-                                                'editMoinhoFornecedor'
-                                            )
-                                            .value;
+                                        const newMaterial =
+                                            document
+                                                .getElementById(
+                                                    'editMoinhoMaterial'
+                                                )
+                                                .value
+                                                .trim();
 
 
-                                    if (
-                                        !newMaterial ||
-                                        isNaN(newPeso) ||
-                                        newPeso <= 0
-                                    ) {
-
-                                        alert(
-                                            'Preencha material e peso válido!'
-                                        );
-
-                                        return;
-
-                                    }
+                                        const newPeso =
+                                            parseFloat(
+                                                document
+                                                    .getElementById(
+                                                        'editMoinhoPeso'
+                                                    )
+                                                    .value
+                                            );
 
 
-                                    if (
-                                        materiais.reduce(
-                                            (acc, m, i) =>
-                                                acc +
+                                        const newFornecedor =
+                                            document
+                                                .getElementById(
+                                                    'editMoinhoFornecedor'
+                                                )
+                                                .value
+                                                .trim();
+
+
+                                        if (
+                                            !newMaterial ||
+                                            isNaN(newPeso) ||
+                                            newPeso <= 0
+                                        ) {
+
+                                            alert(
+                                                'Preencha material e peso válido!'
+                                            );
+
+                                            return;
+
+                                        }
+
+
+                                        const pesoDosOutros =
+                                            materiais.reduce(
                                                 (
-                                                    i === index
-                                                        ? 0
-                                                        : Number(m.peso) || 0
-                                                ),
-                                            0
-                                        ) + newPeso > capacidadeMax
-                                    ) {
-
-                                        alert(
-                                            `❌ O novo peso ultrapassa a capacidade máxima do moinho (${capacidadeMax} T).`
-                                        );
-
-                                        return;
-
-                                    }
-
-
-                                    const novosMateriais =
-                                        [...materiais];
+                                                    acc,
+                                                    m,
+                                                    i
+                                                ) =>
+                                                    acc +
+                                                    (
+                                                        i === index
+                                                            ? 0
+                                                            : Number(
+                                                                m.peso
+                                                            ) || 0
+                                                    ),
+                                                0
+                                            );
 
 
-                                    novosMateriais[index] =
-                                        {
+                                        if (
+                                            pesoDosOutros +
+                                            newPeso >
+                                            capacidadeMax
+                                        ) {
 
-                                            ...novosMateriais[index],
+                                            alert(
+                                                `❌ O novo peso ultrapassa a capacidade máxima do moinho (${capacidadeMax} T).`
+                                            );
 
-                                            codigo:
-                                                newCodigo,
+                                            return;
 
-                                            material:
-                                                newMaterial,
+                                        }
 
-                                            peso:
-                                                newPeso,
 
-                                            fornecedor:
-                                                newFornecedor,
+                                        const editor =
+                                            obterEditorAtual();
+
+
+                                        const novosMateriais =
+                                            [
+                                                ...materiais
+                                            ];
+
+
+                                        novosMateriais[index] =
+                                            {
+
+                                                ...novosMateriais[index],
+
+                                                codigo:
+                                                    newCodigo,
+
+                                                material:
+                                                    newMaterial,
+
+                                                peso:
+                                                    newPeso,
+
+                                                fornecedor:
+                                                    newFornecedor,
+
+                                                turmaId:
+                                                    turmaId,
+
+                                                editadoPor:
+                                                    editor,
+
+                                                editadoPorUid:
+                                                    currentUserGlobal?.uid ||
+                                                    ''
+
+                                            };
+
+
+                                        await saveMoinho({
+
+                                            materiais:
+                                                novosMateriais,
+
+                                            capacidadeMax:
+                                                capacidadeMax,
+
+                                            historico:
+                                                moinhoData.historico ||
+                                                [],
 
                                             turmaId:
                                                 turmaId
 
-                                        };
+                                        });
 
 
-                                    await saveMoinho({
-
-                                        materiais:
-                                            novosMateriais,
-
-                                        capacidadeMax,
-
-                                        historico:
-                                            moinhoData.historico || [],
-
-                                        turmaId:
-                                            turmaId
-
-                                    });
+                                        alert(
+                                            '✅ Item atualizado!'
+                                        );
 
 
-                                    alert(
-                                        '✅ Item atualizado!'
-                                    );
+                                        document.getElementById(
+                                            'editModal'
+                                        ).style.display =
+                                            'none';
 
 
-                                    document.getElementById(
-                                        'editModal'
-                                    ).style.display =
-                                        'none';
+                                        await renderMoinho();
+
+                                    } catch (error) {
+
+                                        console.error(
+                                            '❌ Erro ao editar item:',
+                                            error
+                                        );
 
 
-                                    renderMoinho();
+                                        alert(
+                                            '❌ Não foi possível atualizar o item:\n\n' +
+                                            error.message
+                                        );
+
+                                    }
 
                                 };
 
@@ -2027,7 +2413,8 @@ export async function renderMoinho() {
 
 
                             const nome =
-                                btn.dataset.nome;
+                                btn.dataset.nome ||
+                                'Material';
 
 
                             if (
@@ -2036,36 +2423,113 @@ export async function renderMoinho() {
                                 )
                             ) {
 
-                                const novosMateriais =
-                                    materiais.filter(
-                                        (_, i) =>
-                                            i !==
-                                            index
+                                try {
+
+                                    const editor =
+                                        obterEditorAtual();
+
+
+                                    const agora =
+                                        new Date()
+                                            .toLocaleString(
+                                                'pt-BR'
+                                            );
+
+
+                                    const itemRemovido =
+                                        materiais[index];
+
+
+                                    const novosMateriais =
+                                        materiais.filter(
+                                            (
+                                                _,
+                                                i
+                                            ) =>
+                                                i !==
+                                                index
+                                        );
+
+
+                                    const novoHistorico =
+                                        [
+
+                                            ...(moinhoData.historico || []),
+
+                                            {
+
+                                                tipo:
+                                                    'saida',
+
+                                                material:
+                                                    itemRemovido?.material ||
+                                                    nome,
+
+                                                peso:
+                                                    Number(
+                                                        itemRemovido?.peso ||
+                                                        0
+                                                    ),
+
+                                                data:
+                                                    agora,
+
+                                                acao:
+                                                    'Remoção manual',
+
+                                                turmaId:
+                                                    turmaId,
+
+                                                editadoPor:
+                                                    editor,
+
+                                                editadoPorUid:
+                                                    currentUserGlobal?.uid ||
+                                                    ''
+
+                                            }
+
+                                        ];
+
+
+                                    await saveMoinho({
+
+                                        materiais:
+                                            novosMateriais,
+
+                                        capacidadeMax:
+                                            capacidadeMax,
+
+                                        historico:
+                                            novoHistorico,
+
+                                        turmaId:
+                                            turmaId
+
+                                    });
+
+
+                                    alert(
+                                        '✅ Item removido do moinho!'
                                     );
 
 
-                                await saveMoinho({
+                                    await renderMoinho();
 
-                                    materiais:
-                                        novosMateriais,
+                                } catch (error) {
 
-                                    capacidadeMax,
-
-                                    historico:
-                                        moinhoData.historico || [],
-
-                                    turmaId:
-                                        turmaId
-
-                                });
+                                    console.error(
+                                        '❌ Erro ao remover item:',
+                                        error
+                                    );
 
 
-                                alert(
-                                    '✅ Item removido do moinho!'
-                                );
+                                    alert(
+                                        '❌ Não foi possível remover o item:\n\n' +
+                                        error.message
+                                    );
 
-
-                                renderMoinho();
+                                }
 
                             }
 
@@ -2088,235 +2552,282 @@ export async function renderMoinho() {
                 'click',
                 async () => {
 
-                    const select =
-                        document.getElementById(
-                            'devolverMaterialSelect'
-                        );
+                    try {
+
+                        const select =
+                            document.getElementById(
+                                'devolverMaterialSelect'
+                            );
 
 
-                    const quantidade =
-                        parseFloat(
+                        const quantidade =
+                            parseFloat(
+                                document
+                                    .getElementById(
+                                        'devolverQuantidade'
+                                    )
+                                    .value
+                            );
+
+
+                        if (
+                            !select?.value
+                        ) {
+
+                            alert(
+                                '⚠️ Selecione um material para devolver!'
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            !quantidade ||
+                            quantidade <= 0
+                        ) {
+
+                            alert(
+                                '⚠️ Informe uma quantidade válida!'
+                            );
+
+                            return;
+
+                        }
+
+
+                        const opt =
+                            select.options[
+                                select.selectedIndex
+                            ];
+
+
+                        const nome =
+                            opt.dataset.nome ||
+                            'Material';
+
+
+                        const fornecedor =
+                            opt.dataset.fornecedor ||
+                            '';
+
+
+                        const qtdDisponivel =
+                            parseFloat(
+                                opt.dataset.qtd
+                            );
+
+
+                        if (
+                            quantidade >
+                            qtdDisponivel
+                        ) {
+
+                            alert(
+                                `⚠️ Quantidade indisponível! Disponível: ${qtdDisponivel} kg`
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            totalPeso +
+                            quantidade >
+                            capacidadeMax
+                        ) {
+
+                            alert(
+                                `⚠️ Capacidade do moinho excedida! Disponível: ${capacidadeDisponivel.toFixed(3)} T`
+                            );
+
+                            return;
+
+                        }
+
+
+                        const acaoInput =
                             document
                                 .getElementById(
-                                    'devolverQuantidade'
+                                    'acaoMoinhoInput'
                                 )
-                                .value
-                        );
+                                ?.value
+                                .trim() ||
+                            '';
 
 
-                    if (
-                        !select.value
-                    ) {
-
-                        alert(
-                            '⚠️ Selecione um material para devolver!'
-                        );
-
-                        return;
-
-                    }
+                        const acao =
+                            acaoInput ||
+                            'Devolução de material';
 
 
-                    if (
-                        !quantidade ||
-                        quantidade <= 0
-                    ) {
-
-                        alert(
-                            '⚠️ Informe uma quantidade válida!'
-                        );
-
-                        return;
-
-                    }
+                        const editor =
+                            obterEditorAtual();
 
 
-                    const opt =
-                        select.options[
-                            select.selectedIndex
-                        ];
-
-
-                    const nome =
-                        opt.dataset.nome ||
-                        'Material';
-
-
-                    const fornecedor =
-                        opt.dataset.fornecedor ||
-                        '';
-
-
-                    const qtdDisponivel =
-                        parseFloat(
-                            opt.dataset.qtd
-                        );
-
-
-                    if (
-                        quantidade >
-                        qtdDisponivel
-                    ) {
-
-                        alert(
-                            `⚠️ Quantidade indisponível! Disponível: ${qtdDisponivel} kg`
-                        );
-
-                        return;
-
-                    }
-
-
-                    if (
-                        totalPeso +
-                        quantidade >
-                        capacidadeMax
-                    ) {
-
-                        alert(
-                            `⚠️ Capacidade do moinho excedida! Disponível: ${capacidadeDisponivel.toFixed(3)} T`
-                        );
-
-                        return;
-
-                    }
-
-
-                    const acao =
-                        document
-                            .getElementById(
-                                'acaoMoinhoInput'
-                            )
-                            .value ||
-                        'Devolução de material';
-
-
-                    const materialRef =
-                        ref(
-                            db,
-                            `turmas/${turmaId}/materiais/${select.value}`
-                        );
-
-
-                    const snapshot =
-                        await get(
-                            materialRef
-                        );
-
-
-                    if (
-                        snapshot.exists()
-                    ) {
-
-                        const data =
-                            snapshot.val();
-
-
-                        await update(
-                            materialRef,
-                            {
-
-                                quantidade:
-                                    Number(
-                                        data.quantidade || 0
-                                    ) -
-                                    quantidade
-
-                            }
-                        );
-
-                    }
-
-
-                    const novoItem = {
-
-                        codigo:
-                            opt.dataset.codigo ||
-                            select.value,
-
-                        material:
-                            nome,
-
-                        peso:
-                            quantidade,
-
-                        fornecedor:
-                            fornecedor,
-
-                        data:
+                        const agora =
                             new Date()
                                 .toLocaleString(
                                     'pt-BR'
-                                ),
-
-                        turmaId:
-                            turmaId
-
-                    };
+                                );
 
 
-                    const novosMateriais =
-                        [
-                            ...materiais,
-                            novoItem
-                        ];
+                        const materialRef =
+                            ref(
+                                db,
+                                `turmas/${turmaId}/materiais/${select.value}`
+                            );
 
 
-                    const novoHistorico =
-                        [
-
-                            ...(moinhoData.historico || []),
-
-                            {
-
-                                tipo:
-                                    'entrada',
-
-                                material:
-                                    nome,
-
-                                peso:
-                                    quantidade,
-
-                                data:
-                                    new Date()
-                                        .toLocaleString(
-                                            'pt-BR'
-                                        ),
-
-                                acao:
-                                    acao,
-
-                                turmaId:
-                                    turmaId
-
-                            }
-
-                        ];
+                        const snapshot =
+                            await get(
+                                materialRef
+                            );
 
 
-                    await saveMoinho({
+                        if (
+                            snapshot.exists()
+                        ) {
 
-                        materiais:
-                            novosMateriais,
-
-                        capacidadeMax,
-
-                        historico:
-                            novoHistorico,
-
-                        turmaId:
-                            turmaId
-
-                    });
+                            const data =
+                                snapshot.val();
 
 
-                    alert(
-                        `✅ Material "${nome}" devolvido ao moinho!`
-                    );
+                            await update(
+                                materialRef,
+                                {
+
+                                    quantidade:
+                                        Number(
+                                            data.quantidade ||
+                                            0
+                                        ) -
+                                        quantidade
+
+                                }
+                            );
+
+                        }
 
 
-                    renderMoinho();
+                        const novoItem = {
+
+                            codigo:
+                                opt.dataset.codigo ||
+                                select.value,
+
+                            material:
+                                nome,
+
+                            peso:
+                                quantidade,
+
+                            fornecedor:
+                                fornecedor,
+
+                            data:
+                                agora,
+
+                            turmaId:
+                                turmaId,
+
+                            editadoPor:
+                                editor,
+
+                            editadoPorUid:
+                                currentUserGlobal?.uid ||
+                                ''
+
+                        };
+
+
+                        const novosMateriais =
+                            [
+
+                                ...materiais,
+
+                                novoItem
+
+                            ];
+
+
+                        const novoHistorico =
+                            [
+
+                                ...(moinhoData.historico || []),
+
+                                {
+
+                                    tipo:
+                                        'entrada',
+
+                                    material:
+                                        nome,
+
+                                    peso:
+                                        quantidade,
+
+                                    data:
+                                        agora,
+
+                                    acao:
+                                        acao,
+
+                                    turmaId:
+                                        turmaId,
+
+                                    editadoPor:
+                                        editor,
+
+                                    editadoPorUid:
+                                        currentUserGlobal?.uid ||
+                                        ''
+
+                                }
+
+                            ];
+
+
+                        await saveMoinho({
+
+                            materiais:
+                                novosMateriais,
+
+                            capacidadeMax:
+                                capacidadeMax,
+
+                            historico:
+                                novoHistorico,
+
+                            turmaId:
+                                turmaId
+
+                        });
+
+
+                        alert(
+                            `✅ Material "${nome}" devolvido ao moinho!`
+                        );
+
+
+                        await renderMoinho();
+
+                    } catch (error) {
+
+                        console.error(
+                            '❌ Erro ao devolver material:',
+                            error
+                        );
+
+
+                        alert(
+                            '❌ Não foi possível devolver o material:\n\n' +
+                            error.message
+                        );
+
+                    }
 
                 }
             );
@@ -2334,113 +2845,149 @@ export async function renderMoinho() {
                 'click',
                 async () => {
 
-                    const acao =
+                    try {
+
+                        const acao =
+                            document
+                                .getElementById(
+                                    'acaoMoinhoInput'
+                                )
+                                .value
+                                .trim();
+
+
+                        if (
+                            !acao
+                        ) {
+
+                            alert(
+                                'Digite ou selecione uma ação!'
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            materiais.length ===
+                            0
+                        ) {
+
+                            alert(
+                                'Moinho vazio!'
+                            );
+
+                            return;
+
+                        }
+
+
+                        const editor =
+                            obterEditorAtual();
+
+
+                        const agora =
+                            new Date()
+                                .toLocaleString(
+                                    'pt-BR'
+                                );
+
+
+                        const novoHistorico =
+                            [
+                                ...(moinhoData.historico || [])
+                            ];
+
+
+                        materiais.forEach(
+                            m => {
+
+                                novoHistorico.push({
+
+                                    tipo:
+                                        'acao',
+
+                                    material:
+                                        m.material,
+
+                                    peso:
+                                        m.peso,
+
+                                    data:
+                                        agora,
+
+                                    acao:
+                                        acao,
+
+                                    turmaId:
+                                        turmaId,
+
+                                    editadoPor:
+                                        editor,
+
+                                    editadoPorUid:
+                                        currentUserGlobal?.uid ||
+                                        ''
+
+                                });
+
+                            }
+                        );
+
+
+                        await saveMoinho({
+
+                            materiais:
+                                materiais,
+
+                            capacidadeMax:
+                                capacidadeMax,
+
+                            historico:
+                                novoHistorico,
+
+                            turmaId:
+                                turmaId
+
+                        });
+
+
+                        alert(
+                            `✅ Ação "${acao}" registrada!`
+                        );
+
+
                         document
                             .getElementById(
                                 'acaoMoinhoInput'
                             )
-                            .value;
+                            .value = '';
 
 
-                    if (
-                        !acao
-                    ) {
+                        document
+                            .getElementById(
+                                'acaoMoinhoSelect'
+                            )
+                            .value = '';
 
-                        alert(
-                            'Digite ou selecione uma ação!'
+
+                        await renderMoinho();
+
+                    } catch (error) {
+
+                        console.error(
+                            '❌ Erro ao registrar ação:',
+                            error
                         );
 
-                        return;
-
-                    }
-
-
-                    if (
-                        materiais.length ===
-                        0
-                    ) {
 
                         alert(
-                            'Moinho vazio!'
+                            '❌ Não foi possível registrar a ação:\n\n' +
+                            error.message
                         );
 
-                        return;
-
                     }
-
-
-                    const novoHistorico =
-                        [
-                            ...(moinhoData.historico || [])
-                        ];
-
-
-                    materiais.forEach(
-                        m => {
-
-                            novoHistorico.push({
-
-                                tipo:
-                                    'acao',
-
-                                material:
-                                    m.material,
-
-                                peso:
-                                    m.peso,
-
-                                data:
-                                    new Date()
-                                        .toLocaleString(
-                                            'pt-BR'
-                                        ),
-
-                                acao,
-
-                                turmaId:
-                                    turmaId
-
-                            });
-
-                        }
-                    );
-
-
-                    await saveMoinho({
-
-                        materiais,
-
-                        capacidadeMax,
-
-                        historico:
-                            novoHistorico,
-
-                        turmaId:
-                            turmaId
-
-                    });
-
-
-                    alert(
-                        `✅ Ação "${acao}" registrada!`
-                    );
-
-
-                    document
-                        .getElementById(
-                            'acaoMoinhoInput'
-                        )
-                        .value = '';
-
-
-                    document
-                        .getElementById(
-                            'acaoMoinhoSelect'
-                        )
-                        .value = '';
-
-
-                    renderMoinho();
 
                 }
             );
@@ -2458,93 +3005,134 @@ export async function renderMoinho() {
                 'click',
                 async () => {
 
-                    if (
-                        materiais.length ===
-                        0
-                    ) {
+                    try {
 
-                        alert(
-                            'Moinho vazio!'
-                        );
+                        if (
+                            materiais.length ===
+                            0
+                        ) {
 
-                        return;
+                            alert(
+                                'Moinho vazio!'
+                            );
 
-                    }
+                            return;
+
+                        }
 
 
-                    const acao =
-                        document
-                            .getElementById(
-                                'acaoMoinhoInput'
+                        const acaoInput =
+                            document
+                                .getElementById(
+                                    'acaoMoinhoInput'
+                                )
+                                ?.value
+                                .trim() ||
+                            '';
+
+
+                        const acao =
+                            acaoInput ||
+                            'Processamento';
+
+
+                        if (
+                            confirm(
+                                `Processar ${materiais.length} itens (${totalPeso} T)?`
                             )
-                            .value ||
-                        'Processamento';
+                        ) {
+
+                            const editor =
+                                obterEditorAtual();
 
 
-                    if (
-                        confirm(
-                            `Processar ${materiais.length} itens (${totalPeso} T)?`
-                        )
-                    ) {
-
-                        const novoHistorico =
-                            [
-                                ...(moinhoData.historico || [])
-                            ];
+                            const agora =
+                                new Date()
+                                    .toLocaleString(
+                                        'pt-BR'
+                                    );
 
 
-                        materiais.forEach(
-                            m => {
+                            const novoHistorico =
+                                [
+                                    ...(moinhoData.historico || [])
+                                ];
 
-                                novoHistorico.push({
 
-                                    tipo:
-                                        'saida',
+                            materiais.forEach(
+                                m => {
 
-                                    material:
-                                        m.material,
+                                    novoHistorico.push({
 
-                                    peso:
-                                        m.peso,
+                                        tipo:
+                                            'saida',
 
-                                    data:
-                                        new Date()
-                                            .toLocaleString(
-                                                'pt-BR'
-                                            ),
+                                        material:
+                                            m.material,
 
-                                    acao,
+                                        peso:
+                                            m.peso,
 
-                                    turmaId:
-                                        turmaId
+                                        data:
+                                            agora,
 
-                                });
+                                        acao:
+                                            acao,
 
-                            }
+                                        turmaId:
+                                            turmaId,
+
+                                        editadoPor:
+                                            editor,
+
+                                        editadoPorUid:
+                                            currentUserGlobal?.uid ||
+                                            ''
+
+                                    });
+
+                                }
+                            );
+
+
+                            await saveMoinho({
+
+                                materiais:
+                                    [],
+
+                                capacidadeMax:
+                                    capacidadeMax,
+
+                                historico:
+                                    novoHistorico,
+
+                                turmaId:
+                                    turmaId
+
+                            });
+
+
+                            alert(
+                                '✅ Moinho processado!'
+                            );
+
+
+                            await renderMoinho();
+
+                        }
+
+                    } catch (error) {
+
+                        console.error(
+                            '❌ Erro ao processar moinho:',
+                            error
                         );
-
-
-                        await saveMoinho({
-
-                            materiais: [],
-
-                            capacidadeMax,
-
-                            historico:
-                                novoHistorico,
-
-                            turmaId:
-                                turmaId
-
-                        });
 
 
                         alert(
-                            '✅ Moinho processado!'
+                            '❌ Não foi possível processar o moinho:\n\n' +
+                            error.message
                         );
-
-
-                        renderMoinho();
 
                     }
 
@@ -2564,47 +3152,114 @@ export async function renderMoinho() {
                 'click',
                 async () => {
 
-                    if (
-                        materiais.length ===
-                        0
-                    ) {
+                    try {
 
-                        alert(
-                            'Moinho vazio!'
+                        if (
+                            materiais.length ===
+                            0
+                        ) {
+
+                            alert(
+                                'Moinho vazio!'
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            confirm(
+                                'Limpar moinho?'
+                            )
+                        ) {
+
+                            const editor =
+                                obterEditorAtual();
+
+
+                            const agora =
+                                new Date()
+                                    .toLocaleString(
+                                        'pt-BR'
+                                    );
+
+
+                            const novoHistorico =
+                                [
+
+                                    ...(moinhoData.historico || []),
+
+                                    {
+
+                                        tipo:
+                                            'saida',
+
+                                        material:
+                                            'Todos os materiais',
+
+                                        peso:
+                                            totalPeso,
+
+                                        data:
+                                            agora,
+
+                                        acao:
+                                            'Limpeza do moinho',
+
+                                        turmaId:
+                                            turmaId,
+
+                                        editadoPor:
+                                            editor,
+
+                                        editadoPorUid:
+                                            currentUserGlobal?.uid ||
+                                            ''
+
+                                    }
+
+                                ];
+
+
+                            await saveMoinho({
+
+                                materiais:
+                                    [],
+
+                                capacidadeMax:
+                                    capacidadeMax,
+
+                                historico:
+                                    novoHistorico,
+
+                                turmaId:
+                                    turmaId
+
+                            });
+
+
+                            alert(
+                                '✅ Moinho limpo!'
+                            );
+
+
+                            await renderMoinho();
+
+                        }
+
+                    } catch (error) {
+
+                        console.error(
+                            '❌ Erro ao limpar moinho:',
+                            error
                         );
 
-                        return;
-
-                    }
-
-
-                    if (
-                        confirm(
-                            'Limpar moinho?'
-                        )
-                    ) {
-
-                        await saveMoinho({
-
-                            materiais: [],
-
-                            capacidadeMax,
-
-                            historico:
-                                moinhoData.historico || [],
-
-                            turmaId:
-                                turmaId
-
-                        });
-
 
                         alert(
-                            '✅ Moinho limpo!'
+                            '❌ Não foi possível limpar o moinho:\n\n' +
+                            error.message
                         );
-
-
-                        renderMoinho();
 
                     }
 

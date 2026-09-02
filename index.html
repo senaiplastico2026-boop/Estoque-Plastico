@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -296,20 +295,6 @@
 
             <button
                 type="button"
-                id="esqueciSenhaAlunoBtn"
-                class="btn-secundary">
-
-                <i
-                    class="fas fa-key">
-                </i>
-
-                Esqueci minha senha
-
-            </button>
-
-
-            <button
-                type="button"
                 id="btnAbrirCadastroAluno"
                 class="btn-secundary btn-cadastrar">
 
@@ -392,10 +377,11 @@
 
 
         <!-- =================================================
-             FILTRO DE TURMAS
+             FILTRO DO GATE
         ================================================== -->
 
-        <div class="turma-search">
+        <div
+            class="turma-search">
 
 
             <i
@@ -406,13 +392,15 @@
             <input
                 type="search"
                 id="filtroTurma"
-                placeholder="Pesquisar turma ou código...">
+                placeholder="Pesquisar turma ou código..."
+                autocomplete="off">
+
 
         </div>
 
 
         <!-- =================================================
-             LISTA DE TURMAS
+             LISTA
         ================================================== -->
 
         <div
@@ -549,7 +537,7 @@
 
 
         <!-- =================================================
-             CRIAR TURMA - SOMENTE PROFESSOR
+             CRIAR TURMA
         ================================================== -->
 
         <button
@@ -863,7 +851,7 @@
 
 
     <!-- =====================================================
-         OVERLAY MOBILE
+         OVERLAY
     ====================================================== -->
 
     <div
@@ -934,13 +922,8 @@
 
 
             <!-- =================================================
-                 PESQUISA DO CABEÇALHO REMOVIDA
-                 O filtro de turmas continua existindo
-                 dentro da aba Turmas.
+                 USUÁRIO
             ================================================== -->
-
-
-            <!-- USUÁRIO -->
 
             <div
                 class="header-right">
@@ -1272,48 +1255,43 @@
                     </div>
 
 
-                    <!-- FILTRO DE TURMAS -->
+                    <!-- =================================================
+                         FILTRO DE TURMAS
+                    ================================================== -->
 
-                    <div
-                        class="turmas-page-filter">
+                    <div class="turmas-page-filter">
 
+    <div class="turmas-page-filter-icon">
 
-                        <div
-                            class="turmas-page-filter-icon">
+        <i class="fas fa-search"></i>
 
+    </div>
 
-                            <i
-                                class="fas fa-search">
-                            </i>
+    <div class="turmas-page-filter-content">
 
+        <label for="filtroTurmasPagina">
+            Filtrar turmas
+        </label>
 
-                        </div>
+        <input
+            type="search"
+            id="filtroTurmasPagina"
+            placeholder="Pesquisar turma ou código..."
+            autocomplete="off">
 
+    </div>
 
-                        <div
-                            class="turmas-page-filter-content">
+    <button
+        type="button"
+        id="btnLimparFiltroTurmas"
+        class="btn-limpar-filtro-turmas"
+        aria-label="Limpar filtro">
 
+        ×
 
-                            <label
-                                for="filtroTurmasPagina">
+    </button>
 
-                                Filtrar turmas
-
-                            </label>
-
-
-                            <input
-                                type="search"
-                                id="filtroTurmasPagina"
-                                placeholder="Pesquisar turma ou código..."
-                                autocomplete="off">
-
-
-                        </div>
-
-
-                    </div>
-
+</div>
 
                     <!-- LISTA -->
 
@@ -1346,7 +1324,9 @@
             </section>
 
 
-            <!-- CONFIGURAÇÕES -->
+            <!-- =================================================
+                 CONFIGURAÇÕES
+            ================================================== -->
 
             <section
                 id="tabConfiguracoes"
@@ -1385,6 +1365,8 @@
 
                     </div>
 
+
+                    <!-- APARÊNCIA -->
 
                     <div
                         class="settings-card">
@@ -1442,7 +1424,6 @@
 
                     <!-- =================================================
                          EXCLUIR CONTA
-                         O APP.JS JÁ PODE CONTROLAR O BOTÃO
                     ================================================== -->
 
                     <div
@@ -1555,6 +1536,7 @@
                             |
                         </span>
 
+
                         <strong>
                             Penélope
                         </strong>
@@ -1577,8 +1559,8 @@
                         </i>
 
 
-                        Turma Técnico em Desenvolvimento de Sistemas
-                        | Manhã 2025-2026
+                        Turma de Técnico em Desenvolvimento de Sistemas
+                        | Manhã 2026
 
 
                     </div>
@@ -2742,6 +2724,48 @@
 <script
     type="module"
     src="app.js">
+</script>
+
+
+<!-- =========================================================
+     X DO FILTRO DE TURMAS
+========================================================= -->
+
+<script>
+
+document
+    .getElementById(
+        'btnLimparFiltroTurmas'
+    )
+    ?.addEventListener(
+        'click',
+        function () {
+
+            const filtro =
+                document.getElementById(
+                    'filtroTurmasPagina'
+                );
+
+            if (!filtro) {
+                return;
+            }
+
+            filtro.value = '';
+
+            filtro.dispatchEvent(
+                new Event(
+                    'input',
+                    {
+                        bubbles: true
+                    }
+                )
+            );
+
+            filtro.focus();
+
+        }
+    );
+
 </script>
 
 

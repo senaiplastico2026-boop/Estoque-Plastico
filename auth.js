@@ -24,6 +24,7 @@ import {
     push
 } from 'firebase/database';
 
+
 // ============================================================
 // ESTADO GLOBAL
 // ============================================================
@@ -45,31 +46,118 @@ let userExtraInfo = {
 
 let isOnline = navigator.onLine;
 
+
 window.addEventListener('online', () => {
+
     isOnline = true;
+
     console.log('🟢 Internet conectada.');
+
 });
 
+
 window.addEventListener('offline', () => {
+
     isOnline = false;
+
     console.log('🔴 Internet desconectada.');
+
 });
+
 
 // ============================================================
 // UTILITÁRIOS
 // ============================================================
 
 function sanitizeEmail(email) {
-    return String(email || '').replace(/[.#$\[\]]/g, '_');
+
+    return String(email || '')
+        .replace(/[.#$\[\]]/g, '_');
+
 }
 
-async function salvarComRetry(caminho, dados, tentativas = 5) {
-    for (let i = 0; i < tentativas; i++) {
+
+// ============================================================
+// OBTER NOMES DOS PROFESSORES
+// Usado no histórico de acesso dos alunos
+// ============================================================
+
+function obterNomesProfessoresVinculados(
+    professores
+) {
+
+    if (
+        !Array.isArray(
+            professores
+        )
+    ) {
+
+        return [];
+
+    }
+
+    return professores
+        .map(
+            professor => {
+
+                if (
+                    typeof professor ===
+                    'string'
+                ) {
+
+                    return professor.trim();
+
+                }
+
+                return (
+                    professor?.nome ||
+                    professor?.email?.split('@')[0] ||
+                    ''
+                ).trim();
+
+            }
+        )
+        .filter(Boolean);
+
+}
+
+
+async function salvarComRetry(
+    caminho,
+    dados,
+    tentativas = 5
+) {
+
+    for (
+        let i = 0;
+        i < tentativas;
+        i++
+    ) {
+
         try {
-            await set(ref(db, caminho), dados);
-            return { success: true };
+
+            await set(
+                ref(
+                    db,
+                    caminho
+                ),
+                dados
+            );
+
+            return {
+                success: true
+            };
+
         } catch (error) {
-            if (i === tentativas - 1) throw error;
+
+            if (
+                i ===
+                tentativas - 1
+            ) {
+
+                throw error;
+
+            }
 
             await new Promise(
                 resolve =>
@@ -78,13 +166,17 @@ async function salvarComRetry(caminho, dados, tentativas = 5) {
                         1000 * (i + 1)
                     )
             );
+
         }
+
     }
 
     return {
         success: false
     };
+
 }
+
 
 function resetarDadosLocais() {
 
@@ -112,6 +204,7 @@ function resetarDadosLocais() {
 
 }
 
+
 // ============================================================
 // LOGIN PROFESSOR
 // ============================================================
@@ -129,6 +222,7 @@ async function loginProfessor(
                 email,
                 password
             );
+
 
         const user =
             userCredential.user;
@@ -165,9 +259,7 @@ async function loginProfessor(
             'professor';
 
 
-        if (
-            !isProfessor
-        ) {
+        if (!isProfessor) {
 
             const userSnapshot =
                 await get(
@@ -204,19 +296,15 @@ async function loginProfessor(
         }
 
 
-        if (
-            !isProfessor
-        ) {
+        if (!isProfessor) {
 
             await signOut(
                 auth
             );
 
-
             return {
 
-                success:
-                    false,
+                success: false,
 
                 error:
                     '❌ Esta conta não é de um professor. Use a aba "Aluno".'
@@ -230,11 +318,13 @@ async function loginProfessor(
             'professor';
 
 
-        userExtraInfo =
-            {
-                ...userExtraInfo,
-                ...(profData || {})
-            };
+        userExtraInfo = {
+
+            ...userExtraInfo,
+
+            ...(profData || {})
+
+        };
 
 
         const dataAgora =
@@ -243,6 +333,10 @@ async function loginProfessor(
                     'pt-BR'
                 );
 
+
+        // =====================================================
+        // HISTÓRICO DE LOGIN DO PROFESSOR
+        // =====================================================
 
         const loginData = {
 
@@ -260,6 +354,24 @@ async function loginProfessor(
                 user.email
                     ?.split('@')[0] ||
                 'Professor',
+
+            professorNome:
+                userExtraInfo.nome ||
+                user.email
+                    ?.split('@')[0] ||
+                'Professor',
+
+            turmaId:
+                userExtraInfo.turmaAtualId ||
+                null,
+
+            turmaNome:
+                userExtraInfo.turmaAtualNome ||
+                '',
+
+            turmaCodigo:
+                userExtraInfo.turmaAtualCodigo ||
+                '',
 
             timestamp:
                 Date.now()
@@ -304,6 +416,10 @@ async function loginProfessor(
         );
 
 
+        // =====================================================
+        // HISTÓRICO GLOBAL
+        // =====================================================
+
         try {
 
             await push(
@@ -331,8 +447,7 @@ async function loginProfessor(
 
         return {
 
-            success:
-                true,
+            success: true,
 
             user,
 
@@ -366,8 +481,7 @@ async function loginProfessor(
 
         return {
 
-            success:
-                false,
+            success: false,
 
             error:
                 mensagens[error.code] ||
@@ -378,6 +492,7 @@ async function loginProfessor(
     }
 
 }
+
 
 // ============================================================
 // LOGIN ALUNO
@@ -433,9 +548,7 @@ async function loginAluno(
             'aluno';
 
 
-        if (
-            !isAluno
-        ) {
+        if (!isAluno) {
 
             const userSnapshot =
                 await get(
@@ -472,19 +585,15 @@ async function loginAluno(
         }
 
 
-        if (
-            !isAluno
-        ) {
+        if (!isAluno) {
 
             await signOut(
                 auth
             );
 
-
             return {
 
-                success:
-                    false,
+                success: false,
 
                 error:
                     '❌ Esta conta não é de um aluno. Use a aba "Professor".'
@@ -498,11 +607,13 @@ async function loginAluno(
             'aluno';
 
 
-        userExtraInfo =
-            {
-                ...userExtraInfo,
-                ...(alunoData || {})
-            };
+        userExtraInfo = {
+
+            ...userExtraInfo,
+
+            ...(alunoData || {})
+
+        };
 
 
         const dataAgora =
@@ -511,6 +622,20 @@ async function loginAluno(
                     'pt-BR'
                 );
 
+
+        // =====================================================
+        // PROFESSORES VINCULADOS AO ALUNO
+        // =====================================================
+
+        const professoresNomes =
+            obterNomesProfessoresVinculados(
+                userExtraInfo.professoresVinculados
+            );
+
+
+        // =====================================================
+        // HISTÓRICO DE LOGIN DO ALUNO
+        // =====================================================
 
         const loginData = {
 
@@ -528,6 +653,33 @@ async function loginAluno(
                 user.email
                     ?.split('@')[0] ||
                 'Aluno',
+
+            // Primeiro professor
+            professorNome:
+                professoresNomes[0] ||
+                '',
+
+            // Lista com todos os professores
+            professoresNomes:
+                professoresNomes,
+
+            // Dados completos dos professores
+            professoresVinculados:
+                userExtraInfo.professoresVinculados ||
+                [],
+
+            // Turma atual
+            turmaId:
+                userExtraInfo.turmaAtualId ||
+                null,
+
+            turmaNome:
+                userExtraInfo.turmaAtualNome ||
+                '',
+
+            turmaCodigo:
+                userExtraInfo.turmaAtualCodigo ||
+                '',
 
             timestamp:
                 Date.now()
@@ -572,6 +724,10 @@ async function loginAluno(
         );
 
 
+        // =====================================================
+        // HISTÓRICO GLOBAL
+        // =====================================================
+
         try {
 
             await push(
@@ -599,8 +755,7 @@ async function loginAluno(
 
         return {
 
-            success:
-                true,
+            success: true,
 
             user,
 
@@ -634,8 +789,7 @@ async function loginAluno(
 
         return {
 
-            success:
-                false,
+            success: false,
 
             error:
                 mensagens[error.code] ||
@@ -646,6 +800,7 @@ async function loginAluno(
     }
 
 }
+
 
 // ============================================================
 // CADASTRAR PROFESSOR
@@ -679,8 +834,7 @@ async function cadastrarProfessor(
 
             return {
 
-                success:
-                    false,
+                success: false,
 
                 error:
                     '❌ Este email já está cadastrado como professor.'
@@ -705,8 +859,7 @@ async function cadastrarProfessor(
 
             return {
 
-                success:
-                    false,
+                success: false,
 
                 error:
                     '❌ Este email já está cadastrado como aluno. Use a aba "Aluno".'
@@ -766,8 +919,12 @@ async function cadastrarProfessor(
         await salvarComRetry(
             `professores/${emailKey}`,
             {
+
                 ...userData,
-                uid: user.uid
+
+                uid:
+                    user.uid
+
             }
         );
 
@@ -822,6 +979,7 @@ async function cadastrarProfessor(
     }
 
 }
+
 
 // ============================================================
 // CADASTRAR ALUNO
@@ -911,6 +1069,14 @@ async function cadastrarAluno(
             userCredential.user;
 
 
+        const professoresVinculados =
+            Array.isArray(
+                professores
+            )
+                ? professores
+                : [];
+
+
         const userData = {
 
             nome,
@@ -925,11 +1091,7 @@ async function cadastrarAluno(
                 'Manhã',
 
             professoresVinculados:
-                Array.isArray(
-                    professores
-                )
-                    ? professores
-                    : [],
+                professoresVinculados,
 
             dataCriacao:
                 new Date()
@@ -964,8 +1126,12 @@ async function cadastrarAluno(
         await salvarComRetry(
             `alunos/${emailKey}`,
             {
+
                 ...userData,
-                uid: user.uid
+
+                uid:
+                    user.uid
+
             }
         );
 
@@ -1018,6 +1184,7 @@ async function cadastrarAluno(
     }
 
 }
+
 
 // ============================================================
 // REDEFINIR SENHA
@@ -1096,11 +1263,13 @@ async function redefinirSenha(
 
                 if (
                     String(
-                        data.email || ''
+                        data.email ||
+                        ''
                     )
                         .toLowerCase() ===
                     String(
-                        email || ''
+                        email ||
+                        ''
                     )
                         .toLowerCase()
                 ) {
@@ -1222,6 +1391,7 @@ async function redefinirSenha(
 
 }
 
+
 // ============================================================
 // EXCLUIR MINHA CONTA
 // ============================================================
@@ -1291,17 +1461,14 @@ async function excluirMinhaConta() {
         /*
          * IMPORTANTE:
          *
-         * NÃO removemos o usuário das turmas.
+         * NÃO removemos o professor
+         * das turmas.
          *
-         * As estruturas:
+         * As turmas permanecem intactas.
          *
-         * turmas/{turmaId}/professores
-         *
-         * permanecem intactas.
-         *
-         * Isso permite que outros professores
-         * continuem vinculados e possam administrar
-         * a turma.
+         * Isso permite que outro professor
+         * vinculado continue administrando
+         * e apagando a turma.
          */
 
 
@@ -1353,7 +1520,6 @@ async function excluirMinhaConta() {
         currentUser =
             null;
 
-
         userRole =
             null;
 
@@ -1365,20 +1531,21 @@ async function excluirMinhaConta() {
             'turmaAtual'
         );
 
-
         localStorage.removeItem(
             'turmaAtualId'
         );
-
 
         localStorage.removeItem(
             'turmaAtualNome'
         );
 
-
         localStorage.removeItem(
             'turmaAtualCodigo'
         );
+
+
+        window.senaiTurmaAtualId =
+            null;
 
 
         return {
@@ -1410,6 +1577,7 @@ async function excluirMinhaConta() {
     }
 
 }
+
 
 // ============================================================
 // REMOVER USUÁRIO
@@ -1500,6 +1668,7 @@ async function removerUsuario(
 
 }
 
+
 // ============================================================
 // LISTAR PROFESSORES
 // ============================================================
@@ -1554,6 +1723,7 @@ async function listarProfessores() {
 
 }
 
+
 // ============================================================
 // LISTAR ALUNOS
 // ============================================================
@@ -1607,6 +1777,7 @@ async function listarAlunos() {
     }
 
 }
+
 
 // ============================================================
 // LISTAR ALUNOS POR PROFESSOR
@@ -1734,6 +1905,7 @@ async function listarAlunosPorProfessor(
 
 }
 
+
 // ============================================================
 // ÚLTIMOS ACESSOS
 // ============================================================
@@ -1745,7 +1917,11 @@ async function listarUltimosAcessos(
 
     try {
 
-        const snapshot =
+        // =====================================================
+        // HISTÓRICO DE LOGINS
+        // =====================================================
+
+        const historicoSnapshot =
             await get(
                 ref(
                     db,
@@ -1755,7 +1931,7 @@ async function listarUltimosAcessos(
 
 
         if (
-            !snapshot.exists()
+            !historicoSnapshot.exists()
         ) {
 
             return [];
@@ -1765,18 +1941,22 @@ async function listarUltimosAcessos(
 
         let lista =
             Object.keys(
-                snapshot.val()
+                historicoSnapshot.val()
             ).map(
                 key => ({
 
                     id:
                         key,
 
-                    ...snapshot.val()[key]
+                    ...historicoSnapshot.val()[key]
 
                 })
             );
 
+
+        // =====================================================
+        // FILTRAR POR PERFIL
+        // =====================================================
 
         if (
             role
@@ -1792,6 +1972,10 @@ async function listarUltimosAcessos(
         }
 
 
+        // =====================================================
+        // ORDENAR DO MAIS RECENTE
+        // =====================================================
+
         lista.sort(
             (a, b) =>
                 (
@@ -1805,10 +1989,318 @@ async function listarUltimosAcessos(
         );
 
 
-        return lista.slice(
-            0,
-            limite
-        );
+        // =====================================================
+        // LIMITAR
+        // =====================================================
+
+        lista =
+            lista.slice(
+                0,
+                limite
+            );
+
+
+        // =====================================================
+        // SE FOR HISTÓRICO DE ALUNOS,
+        // BUSCAR OS PROFESSORES NO CADASTRO ATUAL
+        // =====================================================
+
+        if (
+            role === 'aluno' &&
+            lista.length
+        ) {
+
+            try {
+
+                const alunosSnapshot =
+                    await get(
+                        ref(
+                            db,
+                            'alunos'
+                        )
+                    );
+
+
+                if (
+                    alunosSnapshot.exists()
+                ) {
+
+                    const alunos =
+                        alunosSnapshot.val();
+
+
+                    // -------------------------------------------------
+                    // ENRIQUECER CADA REGISTRO
+                    // -------------------------------------------------
+
+                    lista =
+                        lista.map(
+                            login => {
+
+                                // -------------------------------------
+                                // Se o próprio histórico já possui
+                                // professores, mantém esses dados.
+                                // -------------------------------------
+
+                                if (
+                                    Array.isArray(
+                                        login.professoresNomes
+                                    ) &&
+                                    login.professoresNomes.length
+                                ) {
+
+                                    return login;
+
+                                }
+
+
+                                if (
+                                    login.professorNome
+                                ) {
+
+                                    return {
+
+                                        ...login,
+
+                                        professoresNomes:
+                                            [
+                                                login.professorNome
+                                            ]
+
+                                    };
+
+                                }
+
+
+                                // -------------------------------------
+                                // Procurar aluno pelo email
+                                // -------------------------------------
+
+                                const emailLogin =
+                                    String(
+                                        login.email ||
+                                        ''
+                                    )
+                                        .trim()
+                                        .toLowerCase();
+
+
+                                if (!emailLogin) {
+
+                                    return login;
+
+                                }
+
+
+                                let alunoEncontrado =
+                                    null;
+
+
+                                for (
+                                    const aluno of Object.values(
+                                        alunos
+                                    )
+                                ) {
+
+                                    const emailAluno =
+                                        String(
+                                            aluno?.email ||
+                                            ''
+                                        )
+                                            .trim()
+                                            .toLowerCase();
+
+
+                                    if (
+                                        emailAluno ===
+                                        emailLogin
+                                    ) {
+
+                                        alunoEncontrado =
+                                            aluno;
+
+                                        break;
+
+                                    }
+
+                                }
+
+
+                                if (
+                                    !alunoEncontrado
+                                ) {
+
+                                    return login;
+
+                                }
+
+
+                                // -------------------------------------
+                                // Professores do aluno
+                                // -------------------------------------
+
+                                const professores =
+                                    alunoEncontrado
+                                        ?.professoresVinculados;
+
+
+                                if (
+                                    !professores
+                                ) {
+
+                                    return login;
+
+                                }
+
+
+                                let professoresNomes =
+                                    [];
+
+
+                                // -------------------------------------
+                                // Array
+                                // -------------------------------------
+
+                                if (
+                                    Array.isArray(
+                                        professores
+                                    )
+                                ) {
+
+                                    professoresNomes =
+                                        professores
+                                            .map(
+                                                professor => {
+
+                                                    if (
+                                                        typeof professor ===
+                                                        'string'
+                                                    ) {
+
+                                                        return professor
+                                                            .trim();
+
+                                                    }
+
+                                                    return (
+                                                        professor?.nome ||
+                                                        professor?.email
+                                                            ?.split('@')[0] ||
+                                                        ''
+                                                    )
+                                                        .trim();
+
+                                                }
+                                            )
+                                            .filter(Boolean);
+
+                                }
+
+
+                                // -------------------------------------
+                                // Objeto
+                                // -------------------------------------
+
+                                else if (
+                                    typeof professores ===
+                                    'object'
+                                ) {
+
+                                    professoresNomes =
+                                        Object.values(
+                                            professores
+                                        )
+                                            .map(
+                                                professor => {
+
+                                                    if (
+                                                        typeof professor ===
+                                                        'string'
+                                                    ) {
+
+                                                        return professor
+                                                            .trim();
+
+                                                    }
+
+                                                    return (
+                                                        professor?.nome ||
+                                                        professor?.email
+                                                            ?.split('@')[0] ||
+                                                        ''
+                                                    )
+                                                        .trim();
+
+                                                }
+                                            )
+                                            .filter(Boolean);
+
+                                }
+
+
+                                // -------------------------------------
+                                // Remover duplicados
+                                // -------------------------------------
+
+                                professoresNomes =
+                                    [
+                                        ...new Set(
+                                            professoresNomes
+                                        )
+                                    ];
+
+
+                                if (
+                                    !professoresNomes.length
+                                ) {
+
+                                    return login;
+
+                                }
+
+
+                                // -------------------------------------
+                                // Retornar histórico enriquecido
+                                // -------------------------------------
+
+                                return {
+
+                                    ...login,
+
+                                    professorNome:
+                                        professoresNomes[0] ||
+                                        '',
+
+                                    professoresNomes:
+                                        professoresNomes,
+
+                                    professoresVinculados:
+                                        professores
+
+                                };
+
+                            }
+                        );
+
+                }
+
+            } catch (erroAlunos) {
+
+                console.warn(
+                    '⚠️ Não foi possível buscar os professores dos alunos:',
+                    erroAlunos
+                );
+
+            }
+
+        }
+
+
+        // =====================================================
+        // RETORNAR RESULTADO
+        // =====================================================
+
+        return lista;
 
 
     } catch (error) {
@@ -1824,6 +2316,7 @@ async function listarUltimosAcessos(
     }
 
 }
+
 
 // ============================================================
 // LOGOUT
@@ -1853,20 +2346,21 @@ async function logoutUser() {
             'turmaAtual'
         );
 
-
         localStorage.removeItem(
             'turmaAtualId'
         );
-
 
         localStorage.removeItem(
             'turmaAtualNome'
         );
 
-
         localStorage.removeItem(
             'turmaAtualCodigo'
         );
+
+
+        window.senaiTurmaAtualId =
+            null;
 
 
         return {
@@ -1892,6 +2386,7 @@ async function logoutUser() {
     }
 
 }
+
 
 // ============================================================
 // DADOS DO USUÁRIO
@@ -2000,6 +2495,7 @@ async function saveUserExtraInfo(
 
 }
 
+
 // ============================================================
 // TURMAS
 // ============================================================
@@ -2034,6 +2530,7 @@ function gerarCodigoTurma() {
     return codigo;
 
 }
+
 
 // ============================================================
 // LISTAR TODAS AS TURMAS
@@ -2092,6 +2589,7 @@ async function listarTurmas() {
     }
 
 }
+
 
 // ============================================================
 // CRIAR TURMA
@@ -2246,11 +2744,6 @@ async function criarTurma(
                 {},
 
 
-            /*
-             * Cada turma começa com os próprios
-             * dados zerados.
-             */
-
             materiais:
                 {},
 
@@ -2359,6 +2852,7 @@ async function criarTurma(
 
 }
 
+
 // ============================================================
 // TURMAS DO PROFESSOR
 // ============================================================
@@ -2444,6 +2938,7 @@ async function listarTurmasDoProfessor(
     }
 
 }
+
 
 // ============================================================
 // TURMAS POR PROFESSORES
@@ -2577,6 +3072,7 @@ async function listarTurmasPorProfessores(
     }
 
 }
+
 
 // ============================================================
 // VINCULAR PROFESSOR À TURMA
@@ -2744,6 +3240,7 @@ async function vincularProfessorTurma(
 
 }
 
+
 // ============================================================
 // REMOVER TURMA
 // ============================================================
@@ -2817,10 +3314,6 @@ async function removerTurma(
             );
 
 
-        /*
-         * Aceita também professor vinculado.
-         */
-
         if (
             !autorizado &&
             turma.professores
@@ -2878,12 +3371,6 @@ async function removerTurma(
         }
 
 
-        /*
-         * Remove somente esta turma.
-         *
-         * Os dados de outras turmas não são tocados.
-         */
-
         await remove(
             turmaRef
         );
@@ -2918,6 +3405,7 @@ async function removerTurma(
     }
 
 }
+
 
 // ============================================================
 // ENTRAR NA TURMA
@@ -3211,6 +3699,12 @@ async function entrarNaTurma(
             '';
 
 
+        window.senaiTurmaAtualId =
+            String(
+                turmaId
+            );
+
+
         return {
 
             success:
@@ -3249,6 +3743,7 @@ async function entrarNaTurma(
     }
 
 }
+
 
 // ============================================================
 // SALVAR TURMA ATUAL
@@ -3338,6 +3833,12 @@ async function salvarTurmaAtual(
         );
 
 
+        window.senaiTurmaAtualId =
+            String(
+                turma.id
+            );
+
+
         return {
 
             success:
@@ -3361,6 +3862,7 @@ async function salvarTurmaAtual(
     }
 
 }
+
 
 // ============================================================
 // TURMA ATUAL
@@ -3422,6 +3924,7 @@ async function obterTurmaAtual(
     }
 
 }
+
 
 // ============================================================
 // ASSOCIAR ALUNO À TURMA
@@ -3557,6 +4060,7 @@ async function adicionarAlunoNaTurma(
 
 }
 
+
 // ============================================================
 // LISTAR ALUNOS DA TURMA
 // ============================================================
@@ -3626,6 +4130,194 @@ async function listarAlunosDaTurma(
 
 }
 
+
+// ============================================================
+// DETERMINAR ROLE DO USUÁRIO
+// ============================================================
+
+async function descobrirRoleUsuario(
+    uid,
+    email
+) {
+
+    try {
+
+        /*
+         * PRIMEIRO:
+         * usuarios/{uid}
+         */
+
+        const usuarioSnapshot =
+            await get(
+                ref(
+                    db,
+                    `usuarios/${uid}`
+                )
+            );
+
+
+        if (
+            usuarioSnapshot.exists()
+        ) {
+
+            const dados =
+                usuarioSnapshot.val();
+
+
+            if (
+                dados.role ===
+                'professor'
+            ) {
+
+                return {
+
+                    role:
+                        'professor',
+
+                    data:
+                        dados
+
+                };
+
+            }
+
+
+            if (
+                dados.role ===
+                'aluno'
+            ) {
+
+                return {
+
+                    role:
+                        'aluno',
+
+                    data:
+                        dados
+
+                };
+
+            }
+
+        }
+
+
+        /*
+         * FALLBACK:
+         * professores/{email}
+         */
+
+        if (
+            email
+        ) {
+
+            const emailKey =
+                sanitizeEmail(
+                    email
+                );
+
+
+            const professorSnapshot =
+                await get(
+                    ref(
+                        db,
+                        `professores/${emailKey}`
+                    )
+                );
+
+
+            if (
+                professorSnapshot.exists()
+            ) {
+
+                const dados =
+                    professorSnapshot.val();
+
+
+                return {
+
+                    role:
+                        'professor',
+
+                    data:
+                        dados
+
+                };
+
+            }
+
+
+            /*
+             * FALLBACK:
+             * alunos/{email}
+             */
+
+            const alunoSnapshot =
+                await get(
+                    ref(
+                        db,
+                        `alunos/${emailKey}`
+                    )
+                );
+
+
+            if (
+                alunoSnapshot.exists()
+            ) {
+
+                const dados =
+                    alunoSnapshot.val();
+
+
+                return {
+
+                    role:
+                        'aluno',
+
+                    data:
+                        dados
+
+                };
+
+            }
+
+        }
+
+
+        return {
+
+            role:
+                null,
+
+            data:
+                null
+
+        };
+
+
+    } catch (error) {
+
+        console.error(
+            'Erro ao descobrir role do usuário:',
+            error
+        );
+
+
+        return {
+
+            role:
+                null,
+
+            data:
+                null
+
+        };
+
+    }
+
+}
+
+
 // ============================================================
 // AUTH STATE
 // ============================================================
@@ -3638,6 +4330,10 @@ function onAuthStateChange(
         auth,
         async user => {
 
+            /*
+             * NÃO existe logout automático aqui.
+             */
+
             if (
                 user
             ) {
@@ -3646,14 +4342,45 @@ function onAuthStateChange(
                     user;
 
 
-                await loadUserExtraInfo(
-                    user.uid
-                );
+                const descoberta =
+                    await descobrirRoleUsuario(
+                        user.uid,
+                        user.email
+                    );
+
+
+                if (
+                    descoberta.data
+                ) {
+
+                    userExtraInfo = {
+
+                        ...userExtraInfo,
+
+                        ...descoberta.data
+
+                    };
+
+                }
 
 
                 userRole =
-                    userExtraInfo.role ||
-                    'aluno';
+                    descoberta.role;
+
+
+                console.log(
+                    '🔐 Estado de autenticação:',
+                    {
+                        uid:
+                            user.uid,
+
+                        email:
+                            user.email,
+
+                        role:
+                            userRole
+                    }
+                );
 
 
                 callback({
@@ -3671,6 +4398,7 @@ function onAuthStateChange(
 
                 });
 
+
             } else {
 
                 currentUser =
@@ -3684,13 +4412,23 @@ function onAuthStateChange(
                 resetarDadosLocais();
 
 
+                window.senaiTurmaAtualId =
+                    null;
+
+
                 callback({
 
                     isLoggedIn:
                         false,
 
                     user:
-                        null
+                        null,
+
+                    role:
+                        null,
+
+                    extraInfo:
+                        userExtraInfo
 
                 });
 
@@ -3700,6 +4438,7 @@ function onAuthStateChange(
     );
 
 }
+
 
 // ============================================================
 // EXPORTS
@@ -3723,7 +4462,6 @@ export {
 
     onAuthStateChange,
 
-
     removerUsuario,
 
     listarProfessores,
@@ -3733,7 +4471,6 @@ export {
     listarAlunosPorProfessor,
 
     listarUltimosAcessos,
-
 
     loadUserExtraInfo,
 
@@ -3748,7 +4485,6 @@ export {
     isOnline,
 
     sanitizeEmail,
-
 
     gerarCodigoTurma,
 

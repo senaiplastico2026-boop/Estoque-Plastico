@@ -26,27 +26,343 @@ export function setUserData(
 
     currentUserRole = role;
 
-    isUsingLocalData = localFlag || false;
+    isUsingLocalData =
+        localFlag || false;
+
 }
 
 
 // =========================================================
 // ESCAPAR HTML
-// Evita problemas caso o nome/email tenha caracteres especiais
 // =========================================================
 
 function escapeHTML(value) {
 
-    if (value === null || value === undefined) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
         return '';
+
     }
 
     return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+        .replace(
+            /&/g,
+            '&amp;'
+        )
+        .replace(
+            /</g,
+            '&lt;'
+        )
+        .replace(
+            />/g,
+            '&gt;'
+        )
+        .replace(
+            /"/g,
+            '&quot;'
+        )
+        .replace(
+            /'/g,
+            '&#039;'
+        );
+
+}
+
+
+// =========================================================
+// OBTER PROFESSORES DO ALUNO
+// =========================================================
+
+function obterProfessoresDoAluno(
+    login
+) {
+
+    if (!login) {
+
+        return [];
+
+    }
+
+
+    // ---------------------------------------------------------
+    // PROFESSORES PELO CAMPO professoresNomes
+    // ---------------------------------------------------------
+
+    if (
+        Array.isArray(
+            login.professoresNomes
+        ) &&
+        login.professoresNomes.length
+    ) {
+
+        return login.professoresNomes
+            .map(
+                professor => {
+
+                    if (
+                        typeof professor ===
+                        'string'
+                    ) {
+
+                        return professor.trim();
+
+                    }
+
+                    return (
+                        professor?.nome ||
+                        professor?.email ||
+                        ''
+                    ).trim();
+
+                }
+            )
+            .filter(Boolean);
+
+    }
+
+
+    // ---------------------------------------------------------
+    // PROFESSOR PELO CAMPO professorNome
+    // ---------------------------------------------------------
+
+    if (
+        typeof login.professorNome ===
+        'string' &&
+        login.professorNome.trim()
+    ) {
+
+        return [
+            login.professorNome.trim()
+        ];
+
+    }
+
+
+    // ---------------------------------------------------------
+    // PROFESSOR PELO CAMPO professor
+    // ---------------------------------------------------------
+
+    if (
+        typeof login.professor ===
+        'string' &&
+        login.professor.trim()
+    ) {
+
+        return [
+            login.professor.trim()
+        ];
+
+    }
+
+
+    // ---------------------------------------------------------
+    // professor como objeto
+    // ---------------------------------------------------------
+
+    if (
+        login.professor &&
+        typeof login.professor === 'object'
+    ) {
+
+        const nome =
+            login.professor.nome ||
+            login.professor.email ||
+            '';
+
+        if (nome) {
+
+            return [
+                nome
+            ];
+
+        }
+
+    }
+
+
+    // ---------------------------------------------------------
+    // PROFESSORES VINCULADOS
+    // ---------------------------------------------------------
+
+    if (
+        Array.isArray(
+            login.professoresVinculados
+        ) &&
+        login.professoresVinculados.length
+    ) {
+
+        return login.professoresVinculados
+            .map(
+                professor => {
+
+                    if (
+                        typeof professor ===
+                        'string'
+                    ) {
+
+                        return professor.trim();
+
+                    }
+
+                    return (
+                        professor?.nome ||
+                        professor?.email ||
+                        ''
+                    ).trim();
+
+                }
+            )
+            .filter(Boolean);
+
+    }
+
+
+    // ---------------------------------------------------------
+    // CAMPO professores
+    // ---------------------------------------------------------
+
+    if (
+        Array.isArray(
+            login.professores
+        ) &&
+        login.professores.length
+    ) {
+
+        return login.professores
+            .map(
+                professor => {
+
+                    if (
+                        typeof professor ===
+                        'string'
+                    ) {
+
+                        return professor.trim();
+
+                    }
+
+                    return (
+                        professor?.nome ||
+                        professor?.email ||
+                        ''
+                    ).trim();
+
+                }
+            )
+            .filter(Boolean);
+
+    }
+
+
+    // ---------------------------------------------------------
+    // professores como objeto
+    // ---------------------------------------------------------
+
+    if (
+        login.professores &&
+        typeof login.professores === 'object'
+    ) {
+
+        return Object.values(
+            login.professores
+        )
+            .map(
+                professor => {
+
+                    if (
+                        typeof professor ===
+                        'string'
+                    ) {
+
+                        return professor.trim();
+
+                    }
+
+                    return (
+                        professor?.nome ||
+                        professor?.email ||
+                        ''
+                    ).trim();
+
+                }
+            )
+            .filter(Boolean);
+
+    }
+
+
+    return [];
+
+}
+
+
+// =========================================================
+// FORMAR TEXTO DOS PROFESSORES
+// =========================================================
+
+function formatarProfessoresAluno(
+    login
+) {
+
+    const professores =
+        obterProfessoresDoAluno(
+            login
+        );
+
+
+    if (
+        !professores.length
+    ) {
+
+        return 'Aluno';
+
+    }
+
+
+    const nomesUnicos =
+        [
+            ...new Set(
+                professores
+            )
+        ];
+
+
+    if (
+        nomesUnicos.length === 1
+    ) {
+
+        return `Aluno de ${nomesUnicos[0]}`;
+
+    }
+
+
+    if (
+        nomesUnicos.length === 2
+    ) {
+
+        return `Aluno de ${nomesUnicos[0]} e ${nomesUnicos[1]}`;
+
+    }
+
+
+    const ultimo =
+        nomesUnicos[
+            nomesUnicos.length - 1
+        ];
+
+
+    const restantes =
+        nomesUnicos.slice(
+            0,
+            -1
+        );
+
+
+    return `Aluno de ${restantes.join(', ')} e ${ultimo}`;
+
 }
 
 
@@ -60,7 +376,7 @@ export async function renderHistorico() {
     try {
 
         // =====================================================
-        // BUSCAR ÚLTIMOS 10 ACESSOS DE ALUNOS
+        // ÚLTIMOS 10 ACESSOS DE ALUNOS
         // =====================================================
 
         const ultimosAlunos =
@@ -71,7 +387,7 @@ export async function renderHistorico() {
 
 
         // =====================================================
-        // BUSCAR ÚLTIMOS 10 ACESSOS DE PROFESSORES
+        // ÚLTIMOS 10 ACESSOS DE PROFESSORES
         // =====================================================
 
         const ultimosProfessores =
@@ -92,7 +408,9 @@ export async function renderHistorico() {
 
 
         if (!container) {
+
             return;
+
         }
 
 
@@ -114,15 +432,21 @@ export async function renderHistorico() {
                     <div>
 
                         <span class="historico-page-label">
+
                             REGISTROS
+
                         </span>
 
                         <h2>
+
                             Histórico de Acessos
+
                         </h2>
 
                         <p>
+
                             Acompanhe os últimos acessos de alunos e professores ao sistema.
+
                         </p>
 
                     </div>
@@ -158,11 +482,15 @@ export async function renderHistorico() {
                                 <div>
 
                                     <h3>
+
                                         Últimos Acessos
+
                                     </h3>
 
                                     <span>
+
                                         Alunos
+
                                     </span>
 
                                 </div>
@@ -202,6 +530,12 @@ export async function renderHistorico() {
                                             login.data ||
                                             'Data não informada';
 
+                                        const professoresTexto =
+                                            formatarProfessoresAluno(
+                                                login
+                                            );
+
+
                                         return `
 
                                             <div class="log-entry">
@@ -225,9 +559,18 @@ export async function renderHistorico() {
 
                                                         </strong>
 
-                                                        <span class="log-role">
 
-                                                            Aluno
+                                                        <span
+                                                            class="log-role"
+                                                            style="
+                                                                display:block;
+                                                                margin-top:2px;
+                                                            "
+                                                        >
+
+                                                            ${escapeHTML(
+                                                                professoresTexto
+                                                            )}
 
                                                         </span>
 
@@ -306,11 +649,15 @@ export async function renderHistorico() {
                                 <div>
 
                                     <h3>
+
                                         Últimos Acessos
+
                                     </h3>
 
                                     <span>
+
                                         Professores
+
                                     </span>
 
                                 </div>
@@ -349,6 +696,7 @@ export async function renderHistorico() {
                                         const data =
                                             login.data ||
                                             'Data não informada';
+
 
                                         return `
 
@@ -471,11 +819,15 @@ export async function renderHistorico() {
                         <div>
 
                             <h3>
+
                                 Erro ao carregar histórico
+
                             </h3>
 
                             <span>
+
                                 Não foi possível carregar os acessos.
+
                             </span>
 
                         </div>
