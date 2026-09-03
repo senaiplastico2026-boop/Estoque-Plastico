@@ -14,6 +14,14 @@ import {
     remove
 } from "firebase/database";
 
+import {
+    renderMoinho
+} from './moinho.js';
+
+
+// ============================================================
+// USUÁRIO ATUAL
+// ============================================================
 
 let currentUserRole = null;
 let currentUserGlobal = null;
@@ -21,7 +29,7 @@ let isUsingLocalData = false;
 
 
 // ============================================================
-// USUÁRIO
+// DEFINIR DADOS DO USUÁRIO
 // ============================================================
 
 export function setUserData(
@@ -41,55 +49,6 @@ export function setUserData(
 
 
 // ============================================================
-// EDITOR / ADICIONADO POR
-// ============================================================
-
-function obterUsuarioAtual() {
-
-    const nome =
-        userExtraInfo?.nome ||
-        currentUserGlobal?.displayName ||
-        currentUserGlobal?.email?.split('@')[0] ||
-        'Usuário';
-
-    const perfil =
-        currentUserRole === 'professor'
-            ? 'Professor'
-            : currentUserRole === 'aluno'
-                ? 'Aluno'
-                : 'Usuário';
-
-    return `${nome} - ${perfil}`;
-
-}
-
-
-// ============================================================
-// ESCAPAR HTML
-// ============================================================
-
-function escapeHTML(value) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-
-        return '';
-
-    }
-
-    return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-
-}
-
-
-// ============================================================
 // TURMA ATUAL
 // ============================================================
 
@@ -100,6 +59,134 @@ function obterTurmaId() {
         localStorage.getItem('turmaAtualId') ||
         null
     );
+
+}
+
+
+// ============================================================
+// USUÁRIO / EDITOR
+// ============================================================
+
+function obterNomeUsuario() {
+
+    return (
+        userExtraInfo?.nome ||
+        currentUserGlobal?.displayName ||
+        currentUserGlobal?.email?.split('@')[0] ||
+        'Usuário'
+    );
+
+}
+
+
+function obterPerfilUsuario() {
+
+    if (
+        currentUserRole === 'professor'
+    ) {
+
+        return 'Professor';
+
+    }
+
+
+    if (
+        currentUserRole === 'aluno'
+    ) {
+
+        return 'Aluno';
+
+    }
+
+
+    return 'Usuário';
+
+}
+
+
+function obterAdicionadoPor() {
+
+    const nome =
+        obterNomeUsuario();
+
+    const perfil =
+        obterPerfilUsuario();
+
+    return {
+
+        nome,
+
+        perfil,
+
+        uid:
+            currentUserGlobal?.uid || '',
+
+        texto:
+            `${nome} - ${perfil}`
+
+    };
+
+}
+
+
+// ============================================================
+// ATUALIZAR MOINHO APÓS ALTERAÇÃO DOS MATERIAIS
+// ============================================================
+
+async function atualizarMoinhoAposAlteracaoMaterial() {
+
+    try {
+
+        await renderMoinho();
+
+    } catch (error) {
+
+        console.warn(
+            '⚠️ Não foi possível atualizar o Moinho automaticamente:',
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// CAMINHO DOS MATERIAIS
+// ============================================================
+
+function obterCaminhoMateriais() {
+
+    const turmaId =
+        obterTurmaId();
+
+    if (!turmaId) {
+
+        return null;
+
+    }
+
+    return `turmas/${turmaId}/materiais`;
+
+}
+
+
+// ============================================================
+// CAMINHO DA LIXEIRA
+// ============================================================
+
+function obterCaminhoLixeira() {
+
+    const turmaId =
+        obterTurmaId();
+
+    if (!turmaId) {
+
+        return null;
+
+    }
+
+    return `turmas/${turmaId}/lixeira_materiais`;
 
 }
 
@@ -129,17 +216,34 @@ async function getMateriais() {
             obterTurmaId();
 
 
+        if (!turmaId) {
+
+            return [];
+
+        }
+
+
         if (
             isOnline &&
-            !isUsingLocalData &&
-            turmaId
+            !isUsingLocalData
         ) {
+
+            const caminho =
+                obterCaminhoMateriais();
+
+
+            if (!caminho) {
+
+                return [];
+
+            }
+
 
             const snapshot =
                 await get(
                     ref(
                         db,
-                        `turmas/${turmaId}/materiais`
+                        caminho
                     )
                 );
 
@@ -152,50 +256,44 @@ async function getMateriais() {
                     snapshot.val();
 
 
-                return Object.keys(data)
-                    .map(
-                        key => ({
+                return Object.keys(
+                    data
+                ).map(
+                    key => ({
 
-                            id:
-                                key,
+                        id: key,
 
-                            turmaId:
-                                turmaId,
+                        turmaId:
 
-                            ...data[key]
+                            data[key]?.turmaId ||
+                            turmaId,
 
-                        })
-                    );
+                        ...data[key]
+
+                    })
+                );
 
             }
 
-            return [];
-
         }
 
 
-        if (
-            isOnline &&
-            !isUsingLocalData &&
-            !turmaId
-        ) {
-
-            return [];
-
-        }
-
-
-        return localData.materiais || [];
+        return (
+            localData.materiais || []
+        );
 
 
     } catch (error) {
 
         console.error(
-            'Erro ao buscar materiais:',
+            '❌ Erro ao buscar materiais:',
             error
         );
 
-        return localData.materiais || [];
+
+        return (
+            localData.materiais || []
+        );
 
     }
 
@@ -214,17 +312,34 @@ async function getLixeira() {
             obterTurmaId();
 
 
+        if (!turmaId) {
+
+            return [];
+
+        }
+
+
         if (
             isOnline &&
-            !isUsingLocalData &&
-            turmaId
+            !isUsingLocalData
         ) {
+
+            const caminho =
+                obterCaminhoLixeira();
+
+
+            if (!caminho) {
+
+                return [];
+
+            }
+
 
             const snapshot =
                 await get(
                     ref(
                         db,
-                        `turmas/${turmaId}/lixeira_materiais`
+                        caminho
                     )
                 );
 
@@ -237,39 +352,44 @@ async function getLixeira() {
                     snapshot.val();
 
 
-                return Object.keys(data)
-                    .map(
-                        key => ({
+                return Object.keys(
+                    data
+                ).map(
+                    key => ({
 
-                            id:
-                                key,
+                        id: key,
 
-                            turmaId:
-                                turmaId,
+                        turmaId:
 
-                            ...data[key]
+                            data[key]?.turmaId ||
+                            turmaId,
 
-                        })
-                    );
+                        ...data[key]
+
+                    })
+                );
 
             }
-
-            return [];
 
         }
 
 
-        return localData.lixeira || [];
+        return (
+            localData.lixeira || []
+        );
 
 
     } catch (error) {
 
         console.warn(
-            'Erro ao buscar lixeira:',
+            '⚠️ Erro ao buscar lixeira:',
             error
         );
 
-        return localData.lixeira || [];
+
+        return (
+            localData.lixeira || []
+        );
 
     }
 
@@ -291,104 +411,84 @@ async function saveMaterial(
             obterTurmaId();
 
 
-        if (
-            !turmaId
-        ) {
+        if (!turmaId) {
 
             throw new Error(
-                'Selecione uma turma antes de cadastrar o material.'
+                'Nenhuma turma foi selecionada.'
             );
 
         }
 
 
-        if (
-            isOnline &&
-            !isUsingLocalData
-        ) {
+        const caminho =
+            obterCaminhoMateriais();
 
-            if (id) {
 
-                await update(
-                    ref(
-                        db,
-                        `turmas/${turmaId}/materiais/${id}`
-                    ),
-                    data
+        if (!caminho) {
+
+            throw new Error(
+                'Não foi possível encontrar a turma atual.'
+            );
+
+        }
+
+
+        // ========================================================
+        // EDITAR MATERIAL
+        // ========================================================
+
+        if (id) {
+
+            const materialRef =
+                ref(
+                    db,
+                    `${caminho}/${id}`
                 );
 
 
-                return id;
+            const atualizacao = {
+
+                ...data,
+
+                id,
+
+                turmaId
+
+            };
+
+
+            if (
+                isOnline &&
+                !isUsingLocalData
+            ) {
+
+                await update(
+                    materialRef,
+                    atualizacao
+                );
 
             }
 
 
-            const newRef =
-                push(
-                    ref(
-                        db,
-                        `turmas/${turmaId}/materiais`
-                    )
-                );
-
-
-            await set(
-                newRef,
-                {
-
-                    ...data,
-
-                    turmaId:
-                        turmaId,
-
-                    adicionadoPor:
-                        data.adicionadoPor ||
-                        obterUsuarioAtual(),
-
-                    adicionadoPorUid:
-                        data.adicionadoPorUid ||
-                        currentUserGlobal?.uid ||
-                        '',
-
-                    dataAdicao:
-                        data.dataAdicao ||
-                        new Date()
-                            .toLocaleString(
-                                'pt-BR'
-                            )
-
-                }
-            );
-
-
-            return newRef.key;
-
-        }
-
-
-        if (id) {
-
-            const idx =
+            const index =
                 localData.materiais.findIndex(
-                    m =>
-                        m.id === id
+                    material =>
+                        String(material.id) ===
+                        String(id)
                 );
 
 
             if (
-                idx !== -1
+                index >= 0
             ) {
 
-                localData.materiais[idx] =
-                    {
+                localData.materiais[index] = {
 
-                        ...localData.materiais[idx],
+                    ...localData.materiais[index],
 
-                        ...data,
+                    ...atualizacao
 
-                        id
-
-                    };
+                };
 
             }
 
@@ -398,48 +498,81 @@ async function saveMaterial(
         }
 
 
-        const newId =
-            'm' +
-            Date.now();
+        // ========================================================
+        // NOVO MATERIAL
+        // ========================================================
+
+        const novoRef =
+            push(
+                ref(
+                    db,
+                    caminho
+                )
+            );
 
 
-        localData.materiais.push({
+        const adicionador =
+            obterAdicionadoPor();
+
+
+        const novoMaterial = {
 
             ...data,
 
             id:
-                newId,
+                novoRef.key,
 
-            turmaId:
-                turmaId,
+            turmaId,
 
             adicionadoPor:
-                data.adicionadoPor ||
-                obterUsuarioAtual(),
+                adicionador.texto,
+
+            adicionadoPorNome:
+                adicionador.nome,
+
+            adicionadoPorPerfil:
+                adicionador.perfil,
 
             adicionadoPorUid:
-                data.adicionadoPorUid ||
-                currentUserGlobal?.uid ||
-                '',
+                adicionador.uid,
 
-            dataAdicao:
+            adicionadoEm:
                 new Date()
                     .toLocaleString(
                         'pt-BR'
                     )
 
-        });
+        };
 
 
-        return newId;
+        if (
+            isOnline &&
+            !isUsingLocalData
+        ) {
+
+            await set(
+                novoRef,
+                novoMaterial
+            );
+
+        }
+
+
+        localData.materiais.push(
+            novoMaterial
+        );
+
+
+        return novoRef.key;
 
 
     } catch (error) {
 
         console.error(
-            'Erro ao salvar material:',
+            '❌ Erro ao salvar material:',
             error
         );
+
 
         throw error;
 
@@ -449,7 +582,7 @@ async function saveMaterial(
 
 
 // ============================================================
-// REMOVER MATERIAL
+// EXCLUIR MATERIAL
 // ============================================================
 
 async function deleteMaterial(
@@ -462,37 +595,38 @@ async function deleteMaterial(
             obterTurmaId();
 
 
-        if (
-            !turmaId
-        ) {
+        if (!turmaId) {
 
             return {
 
-                success:
-                    false,
+                success: false,
 
                 error:
-                    'Nenhuma turma selecionada.'
+                    'Nenhuma turma foi selecionada.'
 
             };
 
         }
 
 
-        let materialData = {};
+        const materialRef =
+            ref(
+                db,
+                `turmas/${turmaId}/materiais/${id}`
+            );
+
+
+        const lixeiraRef =
+            ref(
+                db,
+                `turmas/${turmaId}/lixeira_materiais/${id}`
+            );
 
 
         if (
             isOnline &&
             !isUsingLocalData
         ) {
-
-            const materialRef =
-                ref(
-                    db,
-                    `turmas/${turmaId}/materiais/${id}`
-                );
-
 
             const snapshot =
                 await get(
@@ -501,39 +635,36 @@ async function deleteMaterial(
 
 
             if (
-                snapshot.exists()
+                !snapshot.exists()
             ) {
 
-                materialData =
-                    snapshot.val();
+                return {
+
+                    success: false,
+
+                    error:
+                        'Material não encontrado.'
+
+                };
 
             }
 
 
+            const materialData =
+                snapshot.val();
+
+
             await set(
-                ref(
-                    db,
-                    `turmas/${turmaId}/lixeira_materiais/${id}`
-                ),
+                lixeiraRef,
                 {
 
                     ...materialData,
-
-                    turmaId:
-                        turmaId,
 
                     dataExclusao:
                         new Date()
                             .toLocaleString(
                                 'pt-BR'
-                            ),
-
-                    removidoPor:
-                        obterUsuarioAtual(),
-
-                    removidoPorUid:
-                        currentUserGlobal?.uid ||
-                        ''
+                            )
 
                 }
             );
@@ -543,58 +674,60 @@ async function deleteMaterial(
                 materialRef
             );
 
-
         } else {
 
-            const idx =
+            const index =
                 localData.materiais.findIndex(
-                    m =>
-                        m.id === id
+                    material =>
+                        String(material.id) ===
+                        String(id)
                 );
 
 
             if (
-                idx !== -1
+                index === -1
             ) {
 
-                materialData =
-                    localData.materiais[idx];
+                return {
 
+                    success: false,
 
-                localData.materiais.splice(
-                    idx,
-                    1
-                );
+                    error:
+                        'Material não encontrado.'
 
-
-                localData.lixeira.push({
-
-                    ...materialData,
-
-                    dataExclusao:
-                        new Date()
-                            .toLocaleString(
-                                'pt-BR'
-                            ),
-
-                    removidoPor:
-                        obterUsuarioAtual(),
-
-                    removidoPorUid:
-                        currentUserGlobal?.uid ||
-                        ''
-
-                });
+                };
 
             }
+
+
+            const materialData =
+                localData.materiais[index];
+
+
+            localData.materiais.splice(
+                index,
+                1
+            );
+
+
+            localData.lixeira.push({
+
+                ...materialData,
+
+                dataExclusao:
+                    new Date()
+                        .toLocaleString(
+                            'pt-BR'
+                        )
+
+            });
 
         }
 
 
         return {
 
-            success:
-                true
+            success: true
 
         };
 
@@ -609,8 +742,7 @@ async function deleteMaterial(
 
         return {
 
-            success:
-                false,
+            success: false,
 
             error:
                 error.message
@@ -623,7 +755,7 @@ async function deleteMaterial(
 
 
 // ============================================================
-// RESTAURAR
+// RESTAURAR MATERIAL
 // ============================================================
 
 async function restaurarMaterialHandler(
@@ -636,17 +768,14 @@ async function restaurarMaterialHandler(
             obterTurmaId();
 
 
-        if (
-            !turmaId
-        ) {
+        if (!turmaId) {
 
             return {
 
-                success:
-                    false,
+                success: false,
 
                 error:
-                    'Nenhuma turma selecionada.'
+                    'Nenhuma turma foi selecionada.'
 
             };
 
@@ -672,100 +801,107 @@ async function restaurarMaterialHandler(
 
 
             if (
-                snapshot.exists()
+                !snapshot.exists()
             ) {
-
-                const data =
-                    snapshot.val();
-
-
-                delete data.dataExclusao;
-
-                delete data.removidoPor;
-
-                delete data.removidoPorUid;
-
-
-                await set(
-                    ref(
-                        db,
-                        `turmas/${turmaId}/materiais/${id}`
-                    ),
-                    data
-                );
-
-
-                await remove(
-                    lixeiraRef
-                );
-
 
                 return {
 
-                    success:
-                        true
+                    success: false,
+
+                    error:
+                        'Material não encontrado na lixeira.'
 
                 };
 
             }
 
-        } else {
 
-            const idx =
-                localData.lixeira.findIndex(
-                    m =>
-                        m.id === id
-                );
+            const data =
+                snapshot.val();
 
 
-            if (
-                idx !== -1
-            ) {
-
-                const data =
-                    {
-                        ...localData.lixeira[idx]
-                    };
+            delete data.dataExclusao;
 
 
-                delete data.dataExclusao;
-
-                delete data.removidoPor;
-
-                delete data.removidoPorUid;
-
-
-                localData.materiais.push({
+            await set(
+                ref(
+                    db,
+                    `turmas/${turmaId}/materiais/${id}`
+                ),
+                {
 
                     ...data,
 
-                    id
+                    id,
 
-                });
+                    turmaId
 
-
-                localData.lixeira.splice(
-                    idx,
-                    1
-                );
+                }
+            );
 
 
-                return {
+            await remove(
+                lixeiraRef
+            );
 
-                    success:
-                        true
 
-                };
+            return {
 
-            }
+                success: true
+
+            };
+
+        }
+
+
+        const index =
+            localData.lixeira.findIndex(
+                material =>
+                    String(material.id) ===
+                    String(id)
+            );
+
+
+        if (
+            index !== -1
+        ) {
+
+            const data =
+                localData.lixeira[index];
+
+
+            delete data.dataExclusao;
+
+
+            localData.materiais.push({
+
+                ...data,
+
+                id,
+
+                turmaId
+
+            });
+
+
+            localData.lixeira.splice(
+                index,
+                1
+            );
+
+
+            return {
+
+                success: true
+
+            };
 
         }
 
 
         return {
 
-            success:
-                false,
+            success: false,
 
             error:
                 'Material não encontrado na lixeira.'
@@ -775,10 +911,15 @@ async function restaurarMaterialHandler(
 
     } catch (error) {
 
+        console.error(
+            '❌ Erro ao restaurar material:',
+            error
+        );
+
+
         return {
 
-            success:
-                false,
+            success: false,
 
             error:
                 error.message
@@ -804,10 +945,23 @@ async function deletarPermanentemente(
             obterTurmaId();
 
 
+        if (!turmaId) {
+
+            return {
+
+                success: false,
+
+                error:
+                    'Nenhuma turma foi selecionada.'
+
+            };
+
+        }
+
+
         if (
             isOnline &&
-            !isUsingLocalData &&
-            turmaId
+            !isUsingLocalData
         ) {
 
             await remove(
@@ -821,8 +975,9 @@ async function deletarPermanentemente(
 
             localData.lixeira =
                 localData.lixeira.filter(
-                    m =>
-                        m.id !== id
+                    material =>
+                        String(material.id) !==
+                        String(id)
                 );
 
         }
@@ -830,8 +985,7 @@ async function deletarPermanentemente(
 
         return {
 
-            success:
-                true
+            success: true
 
         };
 
@@ -846,8 +1000,7 @@ async function deletarPermanentemente(
 
         return {
 
-            success:
-                false,
+            success: false,
 
             error:
                 error.message
@@ -867,6 +1020,42 @@ export async function renderMateriais() {
 
     try {
 
+        const turmaId =
+            obterTurmaId();
+
+
+        if (!turmaId) {
+
+            document.getElementById(
+                'tabMateriais'
+            ).innerHTML = `
+
+                <div class="form-card">
+
+                    <div class="form-title">
+
+                        <i class="fas fa-boxes"></i>
+
+                        Materiais
+
+                    </div>
+
+                    <p style="color:#64748b;">
+
+                        Selecione uma turma para
+                        acessar os materiais.
+
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
         const materiaisList =
             await getMateriais();
 
@@ -876,6 +1065,10 @@ export async function renderMateriais() {
 
 
         let html = `
+
+            <!-- ==================================================
+                 CADASTRAR MATERIAL
+            =================================================== -->
 
             <div class="form-card">
 
@@ -930,6 +1123,7 @@ export async function renderMateriais() {
                             type="number"
                             id="newMaterialQuantidade"
                             step="any"
+                            min="0"
                         >
 
                     </div>
@@ -971,13 +1165,18 @@ export async function renderMateriais() {
                             Estado
                         </label>
 
-                        <select id="newMaterialEstado">
+                        <select
+                            id="newMaterialEstado"
+                        >
 
                             <option value="Ótimo">
                                 Ótimo
                             </option>
 
-                            <option value="Bom" selected>
+                            <option
+                                value="Bom"
+                                selected
+                            >
                                 Bom
                             </option>
 
@@ -1004,6 +1203,7 @@ export async function renderMateriais() {
                             type="number"
                             id="newMaterialEstoqueMinimo"
                             step="any"
+                            min="0"
                         >
 
                     </div>
@@ -1013,9 +1213,11 @@ export async function renderMateriais() {
 
                 <button
                     id="btnAddMaterial"
-                    type="button"
                     class="btn-primary"
+                    type="button"
                 >
+
+                    <i class="fas fa-plus"></i>
 
                     Cadastrar
 
@@ -1023,6 +1225,10 @@ export async function renderMateriais() {
 
             </div>
 
+
+            <!-- ==================================================
+                 FILTROS
+            =================================================== -->
 
             <div class="form-card">
 
@@ -1053,8 +1259,8 @@ export async function renderMateriais() {
 
                     <button
                         id="clearFiltersBtn"
-                        type="button"
                         class="btn-warning"
+                        type="button"
                         style="
                             width:auto;
                             padding:8px 16px;
@@ -1069,6 +1275,10 @@ export async function renderMateriais() {
 
             </div>
 
+
+            <!-- ==================================================
+                 MATERIAIS
+            =================================================== -->
 
             <div class="form-card">
 
@@ -1086,23 +1296,26 @@ export async function renderMateriais() {
                         style="
                             font-size:16px;
                             font-weight:600;
+                            margin:0;
                         "
                     >
 
-                        Materiais (${materiaisList.length})
+                        Materiais
+                        (${materiaisList.length})
 
                     </h3>
 
 
                     <button
                         id="btnVerLixeira"
-                        type="button"
                         class="btn-warning btn-small-action"
+                        type="button"
                     >
 
                         <i class="fas fa-trash"></i>
 
-                        Lixeira (${lixeiraList.length})
+                        Lixeira
+                        (${lixeiraList.length})
 
                     </button>
 
@@ -1163,192 +1376,139 @@ export async function renderMateriais() {
                         >
 
                             ${
-                                materiaisList.length
+                                materiaisList
+                                    .map(
+                                        m => `
 
-                                    ? materiaisList
-                                        .map(
-                                            m => `
+                                        <tr
+                                            data-nome="${(
+                                                m.nome || ''
+                                            ).toLowerCase()}"
 
-                                            <tr
+                                            data-codigo="${(
+                                                m.codigo || ''
+                                            ).toLowerCase()}"
 
-                                                data-nome="${escapeHTML(
-                                                    m.nome || ''
-                                                ).toLowerCase()}"
+                                            data-fornecedor="${(
+                                                m.fornecedor || ''
+                                            ).toLowerCase()}"
 
-                                                data-codigo="${escapeHTML(
-                                                    m.codigo || ''
-                                                ).toLowerCase()}"
+                                            data-categoria="${(
+                                                m.categoria || ''
+                                            ).toLowerCase()}"
+                                        >
 
-                                                data-fornecedor="${escapeHTML(
-                                                    m.fornecedor || ''
-                                                ).toLowerCase()}"
+                                            <td>
 
-                                                data-categoria="${escapeHTML(
-                                                    m.categoria || ''
-                                                ).toLowerCase()}"
+                                                <strong>
+                                                    ${m.codigo || '-'}
+                                                </strong>
 
-                                            >
+                                            </td>
 
-                                                <td>
 
-                                                    <strong>
-                                                        ${escapeHTML(
-                                                            m.codigo || '-'
-                                                        )}
-                                                    </strong>
+                                            <td>
+                                                ${m.nome || '-'}
+                                            </td>
 
-                                                </td>
 
+                                            <td>
+                                                ${m.quantidade || 0}
+                                            </td>
 
-                                                <td>
 
-                                                    ${escapeHTML(
-                                                        m.nome || '-'
-                                                    )}
+                                            <td>
+                                                ${m.categoria || '-'}
+                                            </td>
 
-                                                </td>
 
+                                            <td>
+                                                ${m.fornecedor || '-'}
+                                            </td>
 
-                                                <td>
 
-                                                    ${m.quantidade ?? 0}
+                                            <td>
+                                                ${m.estado || 'Bom'}
+                                            </td>
 
-                                                </td>
 
+                                            <td>
+                                                ${m.estoqueMinimo || '-'}
+                                            </td>
 
-                                                <td>
 
-                                                    ${escapeHTML(
-                                                        m.categoria || '-'
-                                                    )}
+                                            <td>
 
-                                                </td>
+                                                <strong>
+                                                    ${
+                                                        m.adicionadoPor ||
+                                                        (
+                                                            m.adicionadoPorNome
+                                                                ? `${m.adicionadoPorNome} - ${m.adicionadoPorPerfil || ''}`
+                                                                : '-'
+                                                        )
+                                                    }
+                                                </strong>
 
+                                            </td>
 
-                                                <td>
 
-                                                    ${escapeHTML(
-                                                        m.fornecedor || '-'
-                                                    )}
+                                            <td>
 
-                                                </td>
+                                                <button
+                                                    class="btn-edit edit-material"
+                                                    type="button"
+                                                    data-id="${m.id}"
+                                                    data-nome="${m.nome || ''}"
+                                                    data-codigo="${m.codigo || ''}"
+                                                    data-quantidade="${m.quantidade || 0}"
+                                                    data-categoria="${m.categoria || ''}"
+                                                    data-fornecedor="${m.fornecedor || ''}"
+                                                    data-estado="${m.estado || 'Bom'}"
+                                                    data-estoqueminimo="${m.estoqueMinimo || 0}"
+                                                >
 
+                                                    <i class="fas fa-edit"></i>
 
-                                                <td>
+                                                </button>
 
-                                                    ${escapeHTML(
-                                                        m.estado || 'Bom'
-                                                    )}
 
-                                                </td>
+                                                <button
+                                                    class="btn-danger remove-material"
+                                                    type="button"
+                                                    data-id="${m.id}"
+                                                    data-nome="${m.nome || ''}"
+                                                >
 
+                                                    <i class="fas fa-trash"></i>
 
-                                                <td>
+                                                </button>
 
-                                                    ${m.estoqueMinimo ?? '-'}
+                                            </td>
 
-                                                </td>
+                                        </tr>
 
+                                    `
+                                    )
+                                    .join('')
+                                    ||
 
-                                                <td>
-
-                                                    <span
-                                                        class="text-primary"
-                                                        style="
-                                                            font-weight:600;
-                                                            white-space:nowrap;
-                                                        "
-                                                    >
-
-                                                        ${escapeHTML(
-                                                            m.adicionadoPor ||
-                                                            '-'
-                                                        )}
-
-                                                    </span>
-
-                                                </td>
-
-
-                                                <td>
-
-                                                    <button
-                                                        type="button"
-                                                        class="btn-edit edit-material"
-
-                                                        data-id="${escapeHTML(
-                                                            m.id
-                                                        )}"
-
-                                                        data-nome="${escapeHTML(
-                                                            m.nome || ''
-                                                        )}"
-
-                                                        data-codigo="${escapeHTML(
-                                                            m.codigo || ''
-                                                        )}"
-
-                                                        data-quantidade="${m.quantidade ?? 0}"
-
-                                                        data-categoria="${escapeHTML(
-                                                            m.categoria || ''
-                                                        )}"
-
-                                                        data-fornecedor="${escapeHTML(
-                                                            m.fornecedor || ''
-                                                        )}"
-
-                                                        data-estado="${escapeHTML(
-                                                            m.estado || 'Bom'
-                                                        )}"
-
-                                                        data-estoqueminimo="${m.estoqueMinimo ?? 0}"
-
-                                                    >
-
-                                                        <i class="fas fa-edit"></i>
-
-                                                    </button>
-
-
-                                                    <button
-                                                        type="button"
-                                                        class="btn-danger remove-material"
-
-                                                        data-id="${escapeHTML(
-                                                            m.id
-                                                        )}"
-
-                                                        data-nome="${escapeHTML(
-                                                            m.nome || 'Material'
-                                                        )}"
-
-                                                    >
-
-                                                        <i class="fas fa-trash"></i>
-
-                                                    </button>
-
-                                                </td>
-
-                                            </tr>
-
-                                        `
-                                        )
-                                        .join('')
-
-                                    : `
-
+                                    `
                                         <tr>
 
-                                            <td colspan="9">
+                                            <td
+                                                colspan="9"
+                                                style="
+                                                    text-align:center;
+                                                    padding:20px;
+                                                "
+                                            >
 
                                                 Nenhum material
 
                                             </td>
 
                                         </tr>
-
                                     `
                             }
 
@@ -1360,6 +1520,10 @@ export async function renderMateriais() {
 
             </div>
 
+
+            <!-- ==================================================
+                 LIXEIRA
+            =================================================== -->
 
             <div
                 id="lixeiraContainer"
@@ -1382,12 +1546,14 @@ export async function renderMateriais() {
                             style="
                                 font-size:16px;
                                 font-weight:600;
+                                margin:0;
                             "
                         >
 
                             <i class="fas fa-trash"></i>
 
-                            Lixeira (${lixeiraList.length})
+                            Lixeira
+                            (${lixeiraList.length})
 
                         </h3>
 
@@ -1401,8 +1567,8 @@ export async function renderMateriais() {
 
                             <button
                                 id="btnRestaurarSelecionados"
-                                type="button"
                                 class="btn-success btn-small-action"
+                                type="button"
                                 style="display:none;"
                             >
 
@@ -1415,8 +1581,8 @@ export async function renderMateriais() {
 
                             <button
                                 id="btnDeletarSelecionados"
-                                type="button"
                                 class="btn-danger btn-small-action"
+                                type="button"
                                 style="display:none;"
                             >
 
@@ -1429,8 +1595,8 @@ export async function renderMateriais() {
 
                             <button
                                 id="btnFecharLixeira"
-                                type="button"
                                 class="btn-cancel btn-small-action"
+                                type="button"
                             >
 
                                 <i class="fas fa-times"></i>
@@ -1444,7 +1610,11 @@ export async function renderMateriais() {
                     </div>
 
 
-                    <div style="margin-bottom:12px;">
+                    <div
+                        style="
+                            margin-bottom:12px;
+                        "
+                    >
 
                         <label
                             style="
@@ -1455,7 +1625,7 @@ export async function renderMateriais() {
 
                             <input
                                 type="checkbox"
-                                id="selectAllLixeira"
+                                id="selecionarTodosLixeira"
                             >
 
                             Selecionar Todos
@@ -1473,11 +1643,15 @@ export async function renderMateriais() {
 
                                 <tr>
 
-                                    <th>
+                                    <th
+                                        style="width:30px;"
+                                    >
+
                                         <input
                                             type="checkbox"
-                                            id="selectAllLixeira2"
+                                            id="selectAllLixeira"
                                         >
+
                                     </th>
 
                                     <th>
@@ -1518,142 +1692,111 @@ export async function renderMateriais() {
                             >
 
                                 ${
-                                    lixeiraList.length
-
-                                        ? lixeiraList
-                                            .map(
-                                                m => `
-
-                                                <tr>
-
-                                                    <td>
-
-                                                        <input
-                                                            type="checkbox"
-                                                            class="lixeira-checkbox"
-                                                            data-id="${escapeHTML(
-                                                                m.id
-                                                            )}"
-                                                        >
-
-                                                    </td>
-
-
-                                                    <td>
-
-                                                        <strong>
-                                                            ${escapeHTML(
-                                                                m.codigo || '-'
-                                                            )}
-                                                        </strong>
-
-                                                    </td>
-
-
-                                                    <td>
-
-                                                        ${escapeHTML(
-                                                            m.nome || '-'
-                                                        )}
-
-                                                    </td>
-
-
-                                                    <td>
-
-                                                        ${m.quantidade ?? 0}
-
-                                                    </td>
-
-
-                                                    <td>
-
-                                                        ${escapeHTML(
-                                                            m.categoria || '-'
-                                                        )}
-
-                                                    </td>
-
-
-                                                    <td>
-
-                                                        ${escapeHTML(
-                                                            m.fornecedor || '-'
-                                                        )}
-
-                                                    </td>
-
-
-                                                    <td>
-
-                                                        ${escapeHTML(
-                                                            m.dataExclusao || '-'
-                                                        )}
-
-                                                    </td>
-
-
-                                                    <td>
-
-                                                        <button
-                                                            type="button"
-                                                            class="btn-success btn-small-action restaurar-material"
-
-                                                            data-id="${escapeHTML(
-                                                                m.id
-                                                            )}"
-
-                                                            data-nome="${escapeHTML(
-                                                                m.nome || 'Material'
-                                                            )}"
-                                                        >
-
-                                                            <i class="fas fa-undo"></i>
-
-                                                            Restaurar
-
-                                                        </button>
-
-
-                                                        <button
-                                                            type="button"
-                                                            class="btn-danger btn-small-action deletar-permanente"
-
-                                                            data-id="${escapeHTML(
-                                                                m.id
-                                                            )}"
-
-                                                            data-nome="${escapeHTML(
-                                                                m.nome || 'Material'
-                                                            )}"
-                                                        >
-
-                                                            <i class="fas fa-trash"></i>
-
-                                                            Deletar
-
-                                                        </button>
-
-                                                    </td>
-
-                                                </tr>
-
-                                            `
-                                            )
-                                            .join('')
-
-                                        : `
+                                    lixeiraList
+                                        .map(
+                                            m => `
 
                                             <tr>
 
-                                                <td colspan="8">
+                                                <td>
+
+                                                    <input
+                                                        type="checkbox"
+                                                        class="lixeira-checkbox"
+                                                        data-id="${m.id}"
+                                                    >
+
+                                                </td>
+
+
+                                                <td>
+
+                                                    <strong>
+                                                        ${m.codigo || '-'}
+                                                    </strong>
+
+                                                </td>
+
+
+                                                <td>
+                                                    ${m.nome || '-'}
+                                                </td>
+
+
+                                                <td>
+                                                    ${m.quantidade || 0}
+                                                </td>
+
+
+                                                <td>
+                                                    ${m.categoria || '-'}
+                                                </td>
+
+
+                                                <td>
+                                                    ${m.fornecedor || '-'}
+                                                </td>
+
+
+                                                <td>
+                                                    ${m.dataExclusao || '-'}
+                                                </td>
+
+
+                                                <td>
+
+                                                    <button
+                                                        class="btn-success btn-small-action restaurar-material"
+                                                        type="button"
+                                                        data-id="${m.id}"
+                                                        data-nome="${m.nome || ''}"
+                                                    >
+
+                                                        <i class="fas fa-undo"></i>
+
+                                                        Restaurar
+
+                                                    </button>
+
+
+                                                    <button
+                                                        class="btn-danger btn-small-action deletar-permanente"
+                                                        type="button"
+                                                        data-id="${m.id}"
+                                                        data-nome="${m.nome || ''}"
+                                                    >
+
+                                                        <i class="fas fa-trash"></i>
+
+                                                        Deletar
+
+                                                    </button>
+
+                                                </td>
+
+                                            </tr>
+
+                                        `
+                                        )
+                                        .join('')
+                                        ||
+
+                                        `
+                                            <tr>
+
+                                                <td
+                                                    colspan="8"
+                                                    style="
+                                                        text-align:center;
+                                                        padding:20px;
+                                                    "
+                                                >
 
                                                     Lixeira vazia
 
                                                 </td>
 
                                             </tr>
-
                                         `
                                 }
 
@@ -1672,32 +1815,33 @@ export async function renderMateriais() {
 
         document.getElementById(
             'tabMateriais'
-        ).innerHTML =
-            html;
+        ).innerHTML = html;
 
 
-        // ====================================================
-        // FILTRO
-        // ====================================================
+        // ========================================================
+        // FILTROS
+        // ========================================================
 
-        function aplicarFiltroMateriais() {
+        function aplicarFiltros() {
 
             const search =
-                document.getElementById(
-                    'searchMaterialInput'
-                )?.value
+                document
+                    .getElementById(
+                        'searchMaterialInput'
+                    )
+                    ?.value
                     .toLowerCase()
-                    .trim() ||
-                '';
+                    .trim() || '';
 
 
             const categoria =
-                document.getElementById(
-                    'filterCategoriaInput'
-                )?.value
+                document
+                    .getElementById(
+                        'filterCategoriaInput'
+                    )
+                    ?.value
                     .toLowerCase()
-                    .trim() ||
-                '';
+                    .trim() || '';
 
 
             document
@@ -1711,34 +1855,53 @@ export async function renderMateriais() {
                             row.dataset.nome ||
                             '';
 
+
                         const codigo =
                             row.dataset.codigo ||
                             '';
 
+
                         const fornecedor =
                             row.dataset.fornecedor ||
                             '';
+
 
                         const cat =
                             row.dataset.categoria ||
                             '';
 
 
-                        const atendeBusca =
-                            nome.includes(search) ||
-                            codigo.includes(search) ||
-                            fornecedor.includes(search);
+                        const encontrouBusca =
+
+                            nome.includes(
+                                search
+                            ) ||
+
+                            codigo.includes(
+                                search
+                            ) ||
+
+                            fornecedor.includes(
+                                search
+                            );
 
 
-                        const atendeCategoria =
+                        const encontrouCategoria =
+
                             !categoria ||
-                            cat.includes(categoria);
+
+                            cat.includes(
+                                categoria
+                            );
 
 
                         row.style.display =
-                            atendeBusca &&
-                            atendeCategoria
+
+                            encontrouBusca &&
+                            encontrouCategoria
+
                                 ? ''
+
                                 : 'none';
 
                     }
@@ -1753,7 +1916,7 @@ export async function renderMateriais() {
             )
             ?.addEventListener(
                 'input',
-                aplicarFiltroMateriais
+                aplicarFiltros
             );
 
 
@@ -1763,7 +1926,7 @@ export async function renderMateriais() {
             )
             ?.addEventListener(
                 'input',
-                aplicarFiltroMateriais
+                aplicarFiltros
             );
 
 
@@ -1775,42 +1938,25 @@ export async function renderMateriais() {
                 'click',
                 () => {
 
-                    const search =
-                        document.getElementById(
-                            'searchMaterialInput'
-                        );
-
-                    const categoria =
-                        document.getElementById(
-                            'filterCategoriaInput'
-                        );
+                    document.getElementById(
+                        'searchMaterialInput'
+                    ).value = '';
 
 
-                    if (search) {
-
-                        search.value =
-                            '';
-
-                    }
+                    document.getElementById(
+                        'filterCategoriaInput'
+                    ).value = '';
 
 
-                    if (categoria) {
-
-                        categoria.value =
-                            '';
-
-                    }
-
-
-                    aplicarFiltroMateriais();
+                    aplicarFiltros();
 
                 }
             );
 
 
-        // ====================================================
-        // LIXEIRA
-        // ====================================================
+        // ========================================================
+        // ABRIR LIXEIRA
+        // ========================================================
 
         document
             .getElementById(
@@ -1826,35 +1972,34 @@ export async function renderMateriais() {
                         );
 
 
-                    if (!container) {
-                        return;
-                    }
-
-
                     container.style.display =
-                        container.style.display === 'none'
+
+                        container.style.display ===
+                        'none'
+
                             ? 'block'
+
                             : 'none';
 
 
-                    document
-                        .getElementById(
-                            'btnRestaurarSelecionados'
-                        )
-                        .style.display =
-                            'none';
+                    document.getElementById(
+                        'btnRestaurarSelecionados'
+                    ).style.display =
+                        'none';
 
 
-                    document
-                        .getElementById(
-                            'btnDeletarSelecionados'
-                        )
-                        .style.display =
-                            'none';
+                    document.getElementById(
+                        'btnDeletarSelecionados'
+                    ).style.display =
+                        'none';
 
                 }
             );
 
+
+        // ========================================================
+        // FECHAR LIXEIRA
+        // ========================================================
 
         document
             .getElementById(
@@ -1864,24 +2009,126 @@ export async function renderMateriais() {
                 'click',
                 () => {
 
-                    document
-                        .getElementById(
-                            'lixeiraContainer'
-                        )
-                        .style.display =
-                            'none';
+                    document.getElementById(
+                        'lixeiraContainer'
+                    ).style.display =
+                        'none';
 
                 }
             );
 
 
-        // ====================================================
+        // ========================================================
         // SELECIONAR TODOS
-        // ====================================================
+        // ========================================================
 
-        function atualizarBotoesLixeira() {
+        document
+            .getElementById(
+                'selectAllLixeira'
+            )
+            ?.addEventListener(
+                'change',
+                function () {
 
-            const checkboxes =
+                    const checkboxes =
+                        document.querySelectorAll(
+                            '.lixeira-checkbox'
+                        );
+
+
+                    checkboxes.forEach(
+                        checkbox => {
+
+                            checkbox.checked =
+                                this.checked;
+
+                        }
+                    );
+
+
+                    const outro =
+                        document.getElementById(
+                            'selecionarTodosLixeira'
+                        );
+
+
+                    if (outro) {
+
+                        outro.checked =
+                            this.checked;
+
+                    }
+
+
+                    toggleBotoesLixeira();
+
+                }
+            );
+
+
+        document
+            .getElementById(
+                'selecionarTodosLixeira'
+            )
+            ?.addEventListener(
+                'change',
+                function () {
+
+                    const checkboxes =
+                        document.querySelectorAll(
+                            '.lixeira-checkbox'
+                        );
+
+
+                    checkboxes.forEach(
+                        checkbox => {
+
+                            checkbox.checked =
+                                this.checked;
+
+                        }
+                    );
+
+
+                    const selectAll =
+                        document.getElementById(
+                            'selectAllLixeira'
+                        );
+
+
+                    if (selectAll) {
+
+                        selectAll.checked =
+                            this.checked;
+
+                    }
+
+
+                    toggleBotoesLixeira();
+
+                }
+            );
+
+
+        document
+            .querySelectorAll(
+                '.lixeira-checkbox'
+            )
+            .forEach(
+                checkbox => {
+
+                    checkbox.addEventListener(
+                        'change',
+                        toggleBotoesLixeira
+                    );
+
+                }
+            );
+
+
+        function toggleBotoesLixeira() {
+
+            const selecionados =
                 document.querySelectorAll(
                     '.lixeira-checkbox:checked'
                 );
@@ -1900,11 +2147,12 @@ export async function renderMateriais() {
 
 
             if (
-                checkboxes.length > 0
+                selecionados.length > 0
             ) {
 
                 btnRestaurar.style.display =
                     'inline-flex';
+
 
                 btnDeletar.style.display =
                     'inline-flex';
@@ -1914,6 +2162,7 @@ export async function renderMateriais() {
                 btnRestaurar.style.display =
                     'none';
 
+
                 btnDeletar.style.display =
                     'none';
 
@@ -1922,53 +2171,9 @@ export async function renderMateriais() {
         }
 
 
-        document
-            .getElementById(
-                'selectAllLixeira'
-            )
-            ?.addEventListener(
-                'change',
-                function () {
-
-                    document
-                        .querySelectorAll(
-                            '.lixeira-checkbox'
-                        )
-                        .forEach(
-                            checkbox => {
-
-                                checkbox.checked =
-                                    this.checked;
-
-                            }
-                        );
-
-
-                    atualizarBotoesLixeira();
-
-                }
-            );
-
-
-        document
-            .querySelectorAll(
-                '.lixeira-checkbox'
-            )
-            .forEach(
-                checkbox => {
-
-                    checkbox.addEventListener(
-                        'change',
-                        atualizarBotoesLixeira
-                    );
-
-                }
-            );
-
-
-        // ====================================================
+        // ========================================================
         // RESTAURAR SELECIONADOS
-        // ====================================================
+        // ========================================================
 
         document
             .getElementById(
@@ -1987,15 +2192,14 @@ export async function renderMateriais() {
                     const ids =
                         Array.from(
                             checkboxes
-                        )
-                            .map(
-                                checkbox =>
-                                    checkbox.dataset.id
-                            );
+                        ).map(
+                            checkbox =>
+                                checkbox.dataset.id
+                        );
 
 
                     if (
-                        !ids.length
+                        ids.length === 0
                     ) {
 
                         return;
@@ -2010,8 +2214,7 @@ export async function renderMateriais() {
                     ) {
 
                         for (
-                            const id
-                            of ids
+                            const id of ids
                         ) {
 
                             await restaurarMaterialHandler(
@@ -2028,15 +2231,18 @@ export async function renderMateriais() {
 
                         await renderMateriais();
 
+
+                        await atualizarMoinhoAposAlteracaoMaterial();
+
                     }
 
                 }
             );
 
 
-        // ====================================================
+        // ========================================================
         // DELETAR SELECIONADOS
-        // ====================================================
+        // ========================================================
 
         document
             .getElementById(
@@ -2055,15 +2261,14 @@ export async function renderMateriais() {
                     const ids =
                         Array.from(
                             checkboxes
-                        )
-                            .map(
-                                checkbox =>
-                                    checkbox.dataset.id
-                            );
+                        ).map(
+                            checkbox =>
+                                checkbox.dataset.id
+                        );
 
 
                     if (
-                        !ids.length
+                        ids.length === 0
                     ) {
 
                         return;
@@ -2078,8 +2283,7 @@ export async function renderMateriais() {
                     ) {
 
                         for (
-                            const id
-                            of ids
+                            const id of ids
                         ) {
 
                             await deletarPermanentemente(
@@ -2102,195 +2306,9 @@ export async function renderMateriais() {
             );
 
 
-        // ====================================================
-        // ADICIONAR MATERIAL
-        // ====================================================
-
-        async function cadastrarMaterial() {
-
-            const codigo =
-                document
-                    .getElementById(
-                        'newMaterialCodigo'
-                    )
-                    ?.value
-                    .trim() ||
-                '';
-
-
-            const nome =
-                document
-                    .getElementById(
-                        'newMaterialNome'
-                    )
-                    ?.value
-                    .trim() ||
-                '';
-
-
-            const quantidade =
-                parseFloat(
-                    document
-                        .getElementById(
-                            'newMaterialQuantidade'
-                        )
-                        ?.value
-                );
-
-
-            const categoria =
-                document
-                    .getElementById(
-                        'newMaterialCategoria'
-                    )
-                    ?.value
-                    .trim() ||
-                '';
-
-
-            const fornecedor =
-                document
-                    .getElementById(
-                        'newMaterialFornecedor'
-                    )
-                    ?.value
-                    .trim() ||
-                '';
-
-
-            const estado =
-                document
-                    .getElementById(
-                        'newMaterialEstado'
-                    )
-                    ?.value ||
-                'Bom';
-
-
-            const estoqueMinimo =
-                parseFloat(
-                    document
-                        .getElementById(
-                            'newMaterialEstoqueMinimo'
-                        )
-                        ?.value
-                ) ||
-                0;
-
-
-            if (
-                !codigo ||
-                !nome ||
-                isNaN(quantidade)
-            ) {
-
-                alert(
-                    '⚠️ Preencha código, nome e quantidade!'
-                );
-
-                return;
-
-            }
-
-
-            try {
-
-                const btn =
-                    document.getElementById(
-                        'btnAddMaterial'
-                    );
-
-
-                if (btn) {
-
-                    btn.disabled =
-                        true;
-
-                    btn.innerHTML =
-                        '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
-
-                }
-
-
-                const editor =
-                    obterUsuarioAtual();
-
-
-                await saveMaterial({
-
-                    codigo,
-
-                    nome,
-
-                    quantidade,
-
-                    categoria,
-
-                    fornecedor,
-
-                    estado,
-
-                    estoqueMinimo,
-
-                    adicionadoPor:
-                        editor,
-
-                    adicionadoPorUid:
-                        currentUserGlobal?.uid ||
-                        '',
-
-                    dataAdicao:
-                        new Date()
-                            .toLocaleString(
-                                'pt-BR'
-                            )
-
-                });
-
-
-                alert(
-                    `✅ Material cadastrado!\n\nAdicionado por: ${editor}`
-                );
-
-
-                await renderMateriais();
-
-
-            } catch (error) {
-
-                console.error(
-                    'Erro ao cadastrar material:',
-                    error
-                );
-
-
-                alert(
-                    '❌ Não foi possível cadastrar o material:\n\n' +
-                    error.message
-                );
-
-            } finally {
-
-                const btn =
-                    document.getElementById(
-                        'btnAddMaterial'
-                    );
-
-
-                if (btn) {
-
-                    btn.disabled =
-                        false;
-
-                    btn.innerHTML =
-                        'Cadastrar';
-
-                }
-
-            }
-
-        }
-
+        // ========================================================
+        // BOTÃO CADASTRAR
+        // ========================================================
 
         document
             .getElementById(
@@ -2298,42 +2316,42 @@ export async function renderMateriais() {
             )
             ?.addEventListener(
                 'click',
-                cadastrarMaterial
+                addMaterial
             );
 
 
-        // ====================================================
-        // EDITAR MATERIAL
-        // ====================================================
+        // ========================================================
+        // BOTÕES EDITAR
+        // ========================================================
 
         document
             .querySelectorAll(
                 '.edit-material'
             )
             .forEach(
-                btn => {
+                button => {
 
-                    btn.addEventListener(
+                    button.addEventListener(
                         'click',
                         () => {
 
                             openEditMaterialModal(
 
-                                btn.dataset.id,
+                                button.dataset.id,
 
-                                btn.dataset.nome,
+                                button.dataset.nome,
 
-                                btn.dataset.codigo,
+                                button.dataset.codigo,
 
-                                btn.dataset.quantidade,
+                                button.dataset.quantidade,
 
-                                btn.dataset.categoria,
+                                button.dataset.categoria,
 
-                                btn.dataset.fornecedor,
+                                button.dataset.fornecedor,
 
-                                btn.dataset.estado,
+                                button.dataset.estado,
 
-                                btn.dataset.estoqueminimo
+                                button.dataset.estoqueminimo
 
                             );
 
@@ -2344,24 +2362,23 @@ export async function renderMateriais() {
             );
 
 
-        // ====================================================
-        // REMOVER MATERIAL
-        // ====================================================
+        // ========================================================
+        // BOTÕES EXCLUIR
+        // ========================================================
 
         document
             .querySelectorAll(
                 '.remove-material'
             )
             .forEach(
-                btn => {
+                button => {
 
-                    btn.addEventListener(
+                    button.addEventListener(
                         'click',
                         async () => {
 
                             const nome =
-                                btn.dataset.nome ||
-                                'Material';
+                                button.dataset.nome;
 
 
                             if (
@@ -2372,7 +2389,7 @@ export async function renderMateriais() {
 
                                 const result =
                                     await deleteMaterial(
-                                        btn.dataset.id
+                                        button.dataset.id
                                     );
 
 
@@ -2386,6 +2403,9 @@ export async function renderMateriais() {
 
 
                                     await renderMateriais();
+
+
+                                    await atualizarMoinhoAposAlteracaoMaterial();
 
                                 } else {
 
@@ -2405,29 +2425,28 @@ export async function renderMateriais() {
             );
 
 
-        // ====================================================
+        // ========================================================
         // RESTAURAR
-        // ====================================================
+        // ========================================================
 
         document
             .querySelectorAll(
                 '.restaurar-material'
             )
             .forEach(
-                btn => {
+                button => {
 
-                    btn.addEventListener(
+                    button.addEventListener(
                         'click',
                         async () => {
 
                             const nome =
-                                btn.dataset.nome ||
-                                'Material';
+                                button.dataset.nome;
 
 
                             const result =
                                 await restaurarMaterialHandler(
-                                    btn.dataset.id
+                                    button.dataset.id
                                 );
 
 
@@ -2441,6 +2460,9 @@ export async function renderMateriais() {
 
 
                                 await renderMateriais();
+
+
+                                await atualizarMoinhoAposAlteracaoMaterial();
 
                             } else {
 
@@ -2458,24 +2480,23 @@ export async function renderMateriais() {
             );
 
 
-        // ====================================================
-        // DELETAR PERMANENTE
-        // ====================================================
+        // ========================================================
+        // DELETAR PERMANENTEMENTE
+        // ========================================================
 
         document
             .querySelectorAll(
                 '.deletar-permanente'
             )
             .forEach(
-                btn => {
+                button => {
 
-                    btn.addEventListener(
+                    button.addEventListener(
                         'click',
                         async () => {
 
                             const nome =
-                                btn.dataset.nome ||
-                                'Material';
+                                button.dataset.nome;
 
 
                             if (
@@ -2486,7 +2507,7 @@ export async function renderMateriais() {
 
                                 const result =
                                     await deletarPermanentemente(
-                                        btn.dataset.id
+                                        button.dataset.id
                                     );
 
 
@@ -2500,6 +2521,9 @@ export async function renderMateriais() {
 
 
                                     await renderMateriais();
+
+
+                                    await atualizarMoinhoAposAlteracaoMaterial();
 
                                 } else {
 
@@ -2522,34 +2546,20 @@ export async function renderMateriais() {
     } catch (error) {
 
         console.error(
-            'Erro ao renderizar materiais:',
+            '❌ Erro ao renderizar materiais:',
             error
         );
 
 
-        const container =
-            document.getElementById(
-                'tabMateriais'
-            );
+        document.getElementById(
+            'tabMateriais'
+        ).innerHTML =
 
-
-        if (container) {
-
-            container.innerHTML = `
-
-                <p
-                    style="
-                        color:#ef4444;
-                    "
-                >
-
+            `
+                <p style="color:#ef4444;">
                     Erro ao carregar materiais.
-
                 </p>
-
             `;
-
-        }
 
     }
 
@@ -2557,10 +2567,231 @@ export async function renderMateriais() {
 
 
 // ============================================================
-// MODAL EDITAR MATERIAL
+// ADICIONAR MATERIAL
+// ============================================================
+
+async function addMaterial() {
+
+    try {
+
+        const codigo =
+            document
+                .getElementById(
+                    'newMaterialCodigo'
+                )
+                .value
+                .trim();
+
+
+        const nome =
+            document
+                .getElementById(
+                    'newMaterialNome'
+                )
+                .value
+                .trim();
+
+
+        const quantidade =
+            parseFloat(
+                document
+                    .getElementById(
+                        'newMaterialQuantidade'
+                    )
+                    .value
+            );
+
+
+        const categoria =
+            document
+                .getElementById(
+                    'newMaterialCategoria'
+                )
+                .value
+                .trim();
+
+
+        const fornecedor =
+            document
+                .getElementById(
+                    'newMaterialFornecedor'
+                )
+                .value
+                .trim();
+
+
+        const estado =
+            document
+                .getElementById(
+                    'newMaterialEstado'
+                )
+                .value;
+
+
+        const estoqueMinimo =
+            parseFloat(
+                document
+                    .getElementById(
+                        'newMaterialEstoqueMinimo'
+                    )
+                    .value
+            ) || 0;
+
+
+        if (
+            !codigo ||
+            !nome ||
+            isNaN(quantidade)
+        ) {
+
+            alert(
+                'Preencha código, nome e quantidade!'
+            );
+
+            return;
+
+        }
+
+
+        if (
+            quantidade < 0
+        ) {
+
+            alert(
+                'A quantidade não pode ser negativa!'
+            );
+
+            return;
+
+        }
+
+
+        // ========================================================
+        // SALVAR
+        // ========================================================
+
+        const novoId =
+            await saveMaterial({
+
+                codigo,
+
+                nome,
+
+                quantidade,
+
+                categoria,
+
+                fornecedor,
+
+                estado,
+
+                estoqueMinimo
+
+            });
+
+
+        // ========================================================
+        // ATUALIZAR MATERIAIS
+        // ========================================================
+
+        await renderMateriais();
+
+
+        // ========================================================
+        // ATUALIZAR MOINHO
+        // ========================================================
+
+        await atualizarMoinhoAposAlteracaoMaterial();
+
+
+        // ========================================================
+        // SELECIONAR O MATERIAL RECÉM-CRIADO
+        // ========================================================
+
+        const select =
+            document.getElementById(
+                'devolverMaterialSelect'
+            );
+
+
+        if (
+            select &&
+            novoId
+        ) {
+
+            select.value =
+                novoId;
+
+        }
+
+
+        alert(
+            '✅ Material cadastrado!'
+        );
+
+
+        // ========================================================
+        // LIMPAR CAMPOS
+        // ========================================================
+
+        document.getElementById(
+            'newMaterialCodigo'
+        ).value = '';
+
+
+        document.getElementById(
+            'newMaterialNome'
+        ).value = '';
+
+
+        document.getElementById(
+            'newMaterialQuantidade'
+        ).value = '';
+
+
+        document.getElementById(
+            'newMaterialCategoria'
+        ).value = '';
+
+
+        document.getElementById(
+            'newMaterialFornecedor'
+        ).value = '';
+
+
+        document.getElementById(
+            'newMaterialEstado'
+        ).value = 'Bom';
+
+
+        document.getElementById(
+            'newMaterialEstoqueMinimo'
+        ).value = '';
+
+
+    } catch (error) {
+
+        console.error(
+            '❌ Erro ao adicionar material:',
+            error
+        );
+
+
+        alert(
+            '❌ Não foi possível cadastrar o material:\n\n' +
+            error.message
+        );
+
+    }
+
+}
+
+// ============================================================
+// MODAL DE EDIÇÃO
 // ============================================================
 
 function openEditMaterialModal(
+
     id,
     nome,
     codigo,
@@ -2569,11 +2800,13 @@ function openEditMaterialModal(
     fornecedor,
     estado,
     estoqueMinimo
+
 ) {
 
     document.getElementById(
         'modalTitle'
     ).innerHTML =
+
         '<i class="fas fa-edit"></i> Editar Material';
 
 
@@ -2590,7 +2823,7 @@ function openEditMaterialModal(
             <input
                 type="text"
                 id="editMaterialCodigo"
-                value="${escapeHTML(codigo || '')}"
+                value="${codigo || ''}"
             >
 
         </div>
@@ -2605,7 +2838,7 @@ function openEditMaterialModal(
             <input
                 type="text"
                 id="editMaterialNome"
-                value="${escapeHTML(nome || '')}"
+                value="${nome || ''}"
             >
 
         </div>
@@ -2622,6 +2855,7 @@ function openEditMaterialModal(
                 id="editMaterialQuantidade"
                 value="${quantidade || 0}"
                 step="any"
+                min="0"
             >
 
         </div>
@@ -2636,7 +2870,7 @@ function openEditMaterialModal(
             <input
                 type="text"
                 id="editMaterialCategoria"
-                value="${escapeHTML(categoria || '')}"
+                value="${categoria || ''}"
             >
 
         </div>
@@ -2651,7 +2885,7 @@ function openEditMaterialModal(
             <input
                 type="text"
                 id="editMaterialFornecedor"
-                value="${escapeHTML(fornecedor || '')}"
+                value="${fornecedor || ''}"
             >
 
         </div>
@@ -2663,7 +2897,9 @@ function openEditMaterialModal(
                 Estado
             </label>
 
-            <select id="editMaterialEstado">
+            <select
+                id="editMaterialEstado"
+            >
 
                 <option
                     value="Ótimo"
@@ -2709,6 +2945,7 @@ function openEditMaterialModal(
                 id="editMaterialEstoqueMinimo"
                 value="${estoqueMinimo || 0}"
                 step="any"
+                min="0"
             >
 
         </div>
@@ -2720,6 +2957,12 @@ function openEditMaterialModal(
         'editModal'
     ).style.display =
         'block';
+
+
+    document.getElementById(
+        'saveModalBtn'
+    ).style.display =
+        'inline-flex';
 
 
     document.getElementById(
@@ -2739,6 +2982,7 @@ function openEditMaterialModal(
                             .value
                             .trim(),
 
+
                     nome:
                         document
                             .getElementById(
@@ -2746,6 +2990,7 @@ function openEditMaterialModal(
                             )
                             .value
                             .trim(),
+
 
                     quantidade:
                         parseFloat(
@@ -2756,6 +3001,7 @@ function openEditMaterialModal(
                                 .value
                         ),
 
+
                     categoria:
                         document
                             .getElementById(
@@ -2763,6 +3009,7 @@ function openEditMaterialModal(
                             )
                             .value
                             .trim(),
+
 
                     fornecedor:
                         document
@@ -2772,12 +3019,14 @@ function openEditMaterialModal(
                             .value
                             .trim(),
 
+
                     estado:
                         document
                             .getElementById(
                                 'editMaterialEstado'
                             )
                             .value,
+
 
                     estoqueMinimo:
                         parseFloat(
@@ -2792,12 +3041,14 @@ function openEditMaterialModal(
 
 
                 if (
+                    !data.codigo ||
                     !data.nome ||
-                    isNaN(data.quantidade)
+                    isNaN(data.quantidade) ||
+                    data.quantidade < 0
                 ) {
 
                     alert(
-                        '⚠️ Preencha nome e quantidade!'
+                        'Preencha todos os campos corretamente.'
                     );
 
                     return;
@@ -2805,13 +3056,9 @@ function openEditMaterialModal(
                 }
 
 
-                /*
-                 * IMPORTANTE:
-                 *
-                 * Não substituímos adicionadoPor.
-                 * Portanto permanece o usuário original
-                 * que cadastrou o material.
-                 */
+                // ================================================
+                // SALVAR EDIÇÃO
+                // ================================================
 
                 await saveMaterial(
                     data,
@@ -2819,10 +3066,9 @@ function openEditMaterialModal(
                 );
 
 
-                alert(
-                    '✅ Material atualizado!'
-                );
-
+                // ================================================
+                // FECHAR MODAL
+                // ================================================
 
                 document.getElementById(
                     'editModal'
@@ -2830,12 +3076,29 @@ function openEditMaterialModal(
                     'none';
 
 
+                // ================================================
+                // ATUALIZAR MATERIAIS
+                // ================================================
+
                 await renderMateriais();
+
+
+                // ================================================
+                // ATUALIZAR MOINHO
+                // ================================================
+
+                await atualizarMoinhoAposAlteracaoMaterial();
+
+
+                alert(
+                    '✅ Material atualizado!'
+                );
+
 
             } catch (error) {
 
                 console.error(
-                    'Erro ao editar material:',
+                    '❌ Erro ao atualizar material:',
                     error
                 );
 
