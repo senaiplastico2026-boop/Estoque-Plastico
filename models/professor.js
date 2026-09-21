@@ -469,9 +469,11 @@ export async function renderProfessor() {
 
                         <strong>
 
-                            ${escapeHTML(
-                                turmaCodigo
-                            )}
+                            ${userExtraInfo?.role === 'professor' && turmaAtual?.id && turmaCodigo !== '------'
+                                ? `<button type="button" class="codigo-turma-botao" data-codigo-turma="atual"
+                                    aria-haspopup="dialog" aria-controls="modalCodigoTurma"
+                                    aria-label="Exibir código da turma: ${escapeHTML(turmaCodigo)}">${escapeHTML(turmaCodigo)}</button>`
+                                : escapeHTML(turmaCodigo)}
 
                         </strong>
 

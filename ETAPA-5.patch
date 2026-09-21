@@ -1,0 +1,1328 @@
+diff --git a/app.js b/app.js
+--- a/app.js
++++ b/app.js
+@@ -15,6 +15,8 @@
+     listarProfessores,
+     criarTurma,
+     entrarAlunoPorCodigo,
++    acessarTurmaDoProfessor,
++    professorPertenceTurma,
+     restaurarTurmaDoAluno,
+     userExtraInfo,
+     isOnline
+@@ -78,6 +80,7 @@
+ let turmaSelecionada = null;
+ let turmasDisponiveis = [];
+ let processandoEntradaAluno = false;
++let processandoEntradaProfessor = false;
+ 
+ let authEstadoInicializado = false;
+ let processandoEstadoAuth = false;
+@@ -1112,121 +1115,6 @@
+ // PROFESSOR PERTENCE À TURMA
+ // ============================================================
+ 
+-function professorPertenceTurma(
+-    turma,
+-    professor
+-) {
+-
+-    if (
+-        !turma ||
+-        !professor
+-    ) {
+-
+-        return false;
+-
+-    }
+-
+-    const nomeProfessor =
+-        normalizarTexto(
+-            userExtraInfo?.nome
+-        );
+-
+-    const emailProfessor =
+-        normalizarTexto(
+-            professor.email
+-        );
+-
+-    const uidProfessor =
+-        String(
+-            professor.uid || ''
+-        );
+-
+-    const vinculada =
+-        obterProfessoresTurma(
+-            turma
+-        )
+-            .some(
+-                item => {
+-
+-                    if (
+-                        typeof item ===
+-                        'string'
+-                    ) {
+-
+-                        return (
+-                            normalizarTexto(
+-                                item
+-                            ) ===
+-                            nomeProfessor
+-                        );
+-
+-                    }
+-
+-                    return Boolean(
+-
+-                        (
+-                            item?.uid &&
+-                            String(
+-                                item.uid
+-                            ) ===
+-                            uidProfessor
+-                        ) ||
+-
+-                        (
+-                            item?.email &&
+-                            normalizarTexto(
+-                                item.email
+-                            ) ===
+-                            emailProfessor
+-                        ) ||
+-
+-                        (
+-                            item?.nome &&
+-                            normalizarTexto(
+-                                item.nome
+-                            ) ===
+-                            nomeProfessor
+-                        )
+-
+-                    );
+-
+-                }
+-            );
+-
+-    const criador =
+-
+-        (
+-            turma.criadoPorUid &&
+-            String(
+-                turma.criadoPorUid
+-            ) ===
+-            uidProfessor
+-        ) ||
+-
+-        (
+-            turma.criadoPorEmail &&
+-            normalizarTexto(
+-                turma.criadoPorEmail
+-            ) ===
+-            emailProfessor
+-        ) ||
+-
+-        (
+-            turma.criadoPorNome &&
+-            normalizarTexto(
+-                turma.criadoPorNome
+-            ) ===
+-            nomeProfessor
+-        );
+-
+-    return (
+-        vinculada ||
+-        criador
+-    );
+-
+-}
+-
+-
+ // ============================================================
+ // CARREGAR TURMAS DISPONÍVEIS
+ // ============================================================
+@@ -1295,7 +1183,8 @@
+ // ============================================================
+ 
+ function garantirTurmaGate(role = currentUserRole) {
+-    const perfil = role === 'professor' && currentUserRole === 'professor' ? 'professor' : 'aluno';
++    if (currentUserRole === 'professor') return null;
++    const perfil = 'aluno';
+     let gate = document.getElementById('turmaGate');
+     if (!gate) {
+         gate = document.createElement('div');
+@@ -1306,7 +1195,7 @@
+     }
+     if (gate.dataset.perfil !== perfil || !gate.querySelector('#btnEntrarTurma')) {
+         const template = document.getElementById(
+-            perfil === 'professor' ? 'turmaGateProfessorTemplate' : 'turmaGateAlunoTemplate'
++            'turmaGateAlunoTemplate'
+         );
+         if (!template) {
+             throw new Error('A estrutura da tela de acesso à turma não foi encontrada.');
+@@ -1326,6 +1215,13 @@
+     role
+ ) {
+ 
++    if (currentUserRole === 'professor') {
++        mostrarApp();
++        const gate = document.getElementById('turmaGate');
++        if (gate) gate.style.display = 'none';
++        window.showTab('turmas');
++        return;
++    }
+     const gate = garantirTurmaGate(role);
+ 
+     if (gate.dataset.perfil === 'aluno') {
+@@ -1342,144 +1238,6 @@
+         return;
+     }
+ 
+-    const titulo =
+-        document.getElementById(
+-            'turmaGateTitle'
+-        );
+-
+-    const subtitulo =
+-        document.getElementById(
+-            'turmaGateSubtitle'
+-        );
+-
+-    const criarBtn =
+-        document.getElementById(
+-            'btnAbrirCriarTurma'
+-        );
+-
+-    const filtro =
+-        document.getElementById(
+-            'filtroTurma'
+-        );
+-
+-    const codigoInput =
+-        document.getElementById(
+-            'codigoTurmaEntrada'
+-        );
+-
+-    const nome =
+-        document.getElementById(
+-            'turmaSelecionadaNome'
+-        );
+-
+-    const codigo =
+-        document.getElementById(
+-            'codigoTurmaVisual'
+-        );
+-
+-    const detalhes =
+-        document.getElementById(
+-            'turmaSelecionadaDetalhes'
+-        );
+-
+-    turmaSelecionada =
+-        null;
+-
+-    if (titulo) {
+-
+-        titulo.textContent =
+-            'Selecione sua turma';
+-
+-    }
+-
+-    if (subtitulo) {
+-
+-        subtitulo.textContent =
+-            'Selecione uma turma vinculada ao seu perfil e confirme o código.';
+-
+-    }
+-
+-    if (criarBtn) {
+-
+-        criarBtn.style.display =
+-            role === 'professor'
+-                ? 'flex'
+-                : 'none';
+-
+-    }
+-
+-    if (filtro) {
+-
+-        filtro.value = '';
+-
+-    }
+-
+-    if (codigoInput) {
+-
+-        codigoInput.value = '';
+-
+-    }
+-
+-    if (nome) {
+-
+-        nome.textContent =
+-            'Nenhuma turma selecionada';
+-
+-    }
+-
+-    if (codigo) {
+-
+-        codigo.textContent =
+-            '--------';
+-
+-    }
+-
+-    if (detalhes) {
+-
+-        detalhes.textContent =
+-            'Selecione uma turma acima.';
+-
+-    }
+-
+-    carregarTurmasDisponiveis()
+-        .then(
+-            () =>
+-                renderListaTurmasGate()
+-        )
+-        .catch(
+-            error => {
+-
+-                console.error(
+-                    'Erro carregando turmas:',
+-                    error
+-                );
+-
+-                renderListaTurmasGate(
+-                    []
+-                );
+-
+-            }
+-        );
+-
+-    if (appContainer) {
+-
+-        appContainer.style.display =
+-            'none';
+-
+-    }
+-
+-    if (loginContainer) {
+-
+-        loginContainer.style.display =
+-            'none';
+-
+-    }
+-
+-    gate.style.display =
+-        'flex';
+-
+-    closeSidebar();
+-
+ }
+ 
+ 
+@@ -1487,84 +1245,8 @@
+ // SELECIONAR TURMA
+ // ============================================================
+ 
+-function selecionarTurma(
+-    turma
+-) {
+-    if (currentUserRole !== 'professor') return;
+-
+-    if (!turma) {
+-
+-        return;
+-
+-    }
+-
+-    turmaSelecionada = {
+-        ...turma
+-    };
+-
+-    const nome =
+-        document.getElementById(
+-            'turmaSelecionadaNome'
+-        );
+-
+-    const codigo =
+-        document.getElementById(
+-            'codigoTurmaVisual'
+-        );
+-
+-    const detalhes =
+-        document.getElementById(
+-            'turmaSelecionadaDetalhes'
+-        );
+-
+-    const input =
+-        document.getElementById(
+-            'codigoTurmaEntrada'
+-        );
+-
+-    if (nome) {
+-
+-        nome.textContent =
+-            turma.nome ||
+-            'Turma';
+-
+-    }
+-
+-    if (codigo) {
+-
+-        codigo.textContent =
+-            turma.codigo ||
+-            '--------';
+-
+-    }
+-
+-    if (detalhes) {
+-
+-        detalhes.textContent =
+-            `Turma criada por ${turma.criadoPorNome || turma.criadoPorEmail || 'Professor'} em ${turma.criadoEm || 'data não informada'}`;
+-
+-    }
+-
+-    if (input) {
+-
+-        input.value = '';
+-
+-        input.focus();
+-
+-    }
+-
+-    const filtro =
+-        document.getElementById(
+-            'filtroTurma'
+-        );
+-
+-    renderListaTurmasGate(
+-        filtrarTurmas(
+-            turmasDisponiveis,
+-            filtro?.value || ''
+-        )
+-    );
+-
++function selecionarTurma(turma) {
++    if (currentUserRole === 'professor' && turma?.id) return abrirTurmaDoProfessor(turma.id);
+ }
+ 
+ 
+@@ -1839,93 +1521,35 @@
+ // ENTRAR NA TURMA
+ // ============================================================
+ 
++async function abrirTurmaDoProfessor(turmaId) {
++    if (processandoEntradaProfessor || !currentUser || currentUserRole !== 'professor') return;
++    const uid = currentUser.uid;
++    processandoEntradaProfessor = true;
++    const botoes = document.querySelectorAll('.turma-entrar-page');
++    botoes.forEach(btn => { btn.disabled = true; });
++    try {
++        const resultado = await acessarTurmaDoProfessor(turmaId);
++        if (currentUser?.uid !== uid || currentUserRole !== 'professor') return;
++        if (!resultado.success) { alert(resultado.error); return; }
++        definirTurmaAtual(resultado.turma);
++        for (const id of ['tabDashboard', 'tabMateriais', 'tabMoinho', 'tabHistorico', 'tabPerfil']) {
++            document.getElementById(id)?.replaceChildren();
++        }
++        await abrirSistemaNaTurma();
++        if (currentUser?.uid === uid && currentUserRole === 'professor') window.showTab('dashboard', true);
++    } catch (error) {
++        console.error('Erro ao abrir turma do professor:', error);
++        alert('Não foi possível abrir a turma. Tente novamente.');
++    } finally {
++        processandoEntradaProfessor = false;
++        botoes.forEach(btn => { btn.disabled = false; });
++    }
++}
++
+ async function confirmarEntradaNaTurma() {
+-
+-    if (!currentUser) {
+-
+-        mostrarSomenteLogin();
+-
+-        return;
+-
+-    }
+-
+-    if (currentUserRole === 'aluno') {
+-        await confirmarEntradaAlunoPorCodigo();
+-        return;
+-    }
+-
+-    if (!turmaSelecionada) {
+-
+-        alert(
+-            '⚠️ Selecione uma turma primeiro.'
+-        );
+-
+-        return;
+-
+-    }
+-
+-    const input =
+-        document.getElementById(
+-            'codigoTurmaEntrada'
+-        );
+-
+-    const digitado =
+-        input?.value.trim() ||
+-        '';
+-
+-    if (!digitado) {
+-
+-        alert(
+-            '⚠️ Digite o código da turma.'
+-        );
+-
+-        input?.focus();
+-
+-        return;
+-
+-    }
+-
+-    if (
+-        normalizarTexto(
+-            digitado
+-        ) !==
+-        normalizarTexto(
+-            turmaSelecionada.codigo
+-        )
+-    ) {
+-
+-        alert(
+-            '❌ Código da turma incorreto.'
+-        );
+-
+-        input?.select();
+-
+-        return;
+-
+-    }
+-
+-    try {
+-
+-        definirTurmaAtual(
+-            turmaSelecionada
+-        );
+-
+-        await abrirSistemaNaTurma();
+-
+-    } catch (error) {
+-
+-        console.error(
+-            'Erro ao entrar na turma:',
+-            error
+-        );
+-
+-        alert(
+-            '❌ Não foi possível entrar na turma:\n' +
+-            error.message
+-        );
+-
+-    }
+-
++    if (!currentUser) return mostrarSomenteLogin();
++    if (currentUserRole === 'aluno') return confirmarEntradaAlunoPorCodigo();
++    if (currentUserRole === 'professor' && turmaSelecionada?.id) return abrirTurmaDoProfessor(turmaSelecionada.id);
+ }
+ 
+ 
+@@ -2280,8 +1904,10 @@
+         const resultado = await criarTurma({ nome, descricao, professores, professorPrincipal });
+         if (!resultado.success) throw new Error(resultado.error);
+         if (currentUser?.uid !== professorPrincipal.uid) return;
+-        definirTurmaAtual(resultado.turma);
+-        window.senaiTurmaAtualId = resultado.turma.id;
++        const acesso = await acessarTurmaDoProfessor(resultado.turma.id);
++        if (!acesso.success) throw new Error('Turma criada, mas ' + acesso.error);
++        if (currentUser?.uid !== professorPrincipal.uid) return;
++        definirTurmaAtual(acesso.turma);
+         limparFormularioCriarTurma();
+         if (criarTurmaModal) criarTurmaModal.style.display = 'none';
+         alert('✅ Turma criada com sucesso!');
+@@ -2800,16 +2426,7 @@
+ 
+                             }
+ 
+-                            turmaSelecionada =
+-                                turma;
+-
+-                            mostrarGate(
+-                                'professor'
+-                            );
+-
+-                            selecionarTurma(
+-                                turma
+-                            );
++                            abrirTurmaDoProfessor(turma.id);
+ 
+                         }
+                     );
+@@ -3257,6 +2874,15 @@
+     currentUserRole =
+         roleFinal;
+ 
++    if (roleFinal === 'professor') {
++        definirTurmaAtual(null);
++        Object.assign(userExtraInfo, { turmaAtualId: null, turmaAtualNome: '', turmaAtualCodigo: '' });
++        for (const id of ['tabDashboard', 'tabMateriais', 'tabMoinho', 'tabHistorico', 'tabPerfil']) {
++            document.getElementById(id)?.replaceChildren();
++        }
++        atualizarTurmaInterface();
++    }
++
+     try {
+ 
+         setDashboardData(
+@@ -3570,8 +3196,11 @@
+ 
+ window.showTab =
+     function (
+-        tabName
++        tabName,
++        aberturaValidada = false
+     ) {
++
++        if (processandoEntradaProfessor && !aberturaValidada) return;
+ 
+         if (
+             tabName ===
+@@ -4491,56 +4120,7 @@
+                 // Restaurar turma salva localmente
+                 // --------------------------------------------
+ 
+-                const turmaSalva =
+-                    localStorage.getItem(
+-                        'turmaAtual'
+-                    );
+-
+-                if (
+-                    currentUserRole === 'professor' &&
+-                    turmaSalva &&
+-                    !currentTurma
+-                ) {
+-
+-                    try {
+-
+-                        const turmaParseada =
+-                            JSON.parse(
+-                                turmaSalva
+-                            );
+-
+-                        if (
+-                            turmaParseada?.id
+-                        ) {
+-
+-                            currentTurma =
+-                                turmaParseada;
+-
+-                            turmaSelecionada =
+-                                turmaParseada;
+-
+-                            window.senaiTurmaAtualId =
+-                                String(
+-                                    turmaParseada.id
+-                                );
+-
+-                        }
+-
+-                    } catch (error) {
+-
+-                        console.warn(
+-                            '⚠️ Não foi possível restaurar a turma salva:',
+-                            error
+-                        );
+-
+-                    }
+-
+-                }
+-
+-                // --------------------------------------------
+-                // Preparar sessão
+-                // --------------------------------------------
+-
++                // Professor volta para Minhas Turmas; cache não autoriza acesso.
+                 await prepararPosLogin(
+                     state.user,
+                     currentUserRole
+@@ -4662,4 +4242,4 @@
+ 
+ console.log(
+     '🚀 SENAI Plásticos iniciado!'
+-);
+\ No newline at end of file
++);
+diff --git a/auth.js b/auth.js
+--- a/auth.js
++++ b/auth.js
+@@ -2702,53 +2702,9 @@
+             await listarTurmas();
+ 
+ 
+-        return turmas.filter(
+-            turma => {
+-
+-                if (
+-                    turma.criadoPorUid ===
+-                    professorUid
+-                ) {
+-
+-                    return true;
+-
+-                }
+-
+-
+-                if (
+-                    turma.professores &&
+-                    !Array.isArray(
+-                        turma.professores
+-                    ) &&
+-                    turma.professores[
+-                        professorUid
+-                    ]
+-                ) {
+-
+-                    return true;
+-
+-                }
+-
+-
+-                if (
+-                    Array.isArray(
+-                        turma.professores
+-                    )
+-                ) {
+-
+-                    return turma.professores.some(
+-                        item =>
+-                            item?.uid ===
+-                            professorUid
+-                    );
+-
+-                }
+-
+-
+-                return false;
+-
+-            }
+-        );
++        const professor = auth.currentUser?.uid === professorUid
++            ? auth.currentUser : { uid: professorUid };
++        return turmas.filter(turma => professorPertenceTurma(turma, professor));
+ 
+ 
+     } catch (error) {
+@@ -3427,260 +3383,90 @@
+ // ENTRAR NA TURMA
+ // ============================================================
+ 
+-async function entrarNaTurma(
+-    turmaId,
+-    codigoInformado,
+-    userUid,
+-    role
+-) {
+-
++// A mesma política atende listagem e abertura; nome nunca comprova vínculo.
++function professorPertenceTurma(turma, professor) {
++    if (!turma || !professor?.uid) return false;
++    const uid = String(professor.uid);
++    const email = String(professor.email || '').trim().toLowerCase();
++    const professores = turma.professores || {};
++    const direto = !Array.isArray(professores) && professores[uid];
++    if (direto === true || (direto && typeof direto === 'object' &&
++        !Array.isArray(direto) && (!direto.uid || String(direto.uid) === uid))) return true;
++    const vinculado = Object.values(professores).some(item => {
++        if (!item || typeof item !== 'object') return false;
++        if (item.uid) return String(item.uid) === uid;
++        // Legado: e-mail exato apenas quando o registro não possui UID.
++        return Boolean(email && String(item.email || '').trim().toLowerCase() === email);
++    });
++    if (vinculado) return true;
++    if (turma.criadoPorUid) return String(turma.criadoPorUid) === uid;
++    return Boolean(email && String(turma.criadoPorEmail || '').trim().toLowerCase() === email);
++}
++
++async function acessarTurmaDoProfessor(turmaId) {
++    const user = auth.currentUser;
++    let salvando = false;
++    try {
++        if (!user?.uid || userRole !== 'professor') {
++            return { success: false, error: 'Faça login como professor para acessar suas turmas.' };
++        }
++        if (!isOnline) return { success: false, error: 'Sem conexão. Reconecte-se para acessar sua turma.' };
++        if (!turmaId || /[.#$\[\]\/]/.test(String(turmaId))) {
++            return { success: false, error: 'Turma não encontrada.' };
++        }
++        const snapshot = await get(ref(db, `turmas/${turmaId}`));
++        if (!snapshot.exists()) return { success: false, error: 'Turma não encontrada.' };
++        const turma = { ...snapshot.val(), id: String(turmaId) };
++        if (!professorPertenceTurma(turma, user)) {
++            return { success: false, error: 'Você não possui acesso a esta turma.' };
++        }
++        if (turma.ativo === false) return { success: false, error: 'Esta turma está desativada.' };
++        if (auth.currentUser?.uid !== user.uid || userRole !== 'professor') {
++            return { success: false, error: 'Sua sessão mudou. Faça login novamente.' };
++        }
++        const campos = {
++            turmaAtualId: turma.id, turmaAtualNome: turma.nome || '',
++            turmaAtualCodigo: turma.codigo || '', turmaSelecionadaEm: Date.now()
++        };
++        const caminhos = [`usuarios/${user.uid}`];
++        if (user.email) caminhos.push(`professores/${sanitizeEmail(user.email)}`);
++        const alteracoes = {};
++        for (const caminho of caminhos) {
++            for (const [campo, valor] of Object.entries(campos)) alteracoes[`${caminho}/${campo}`] = valor;
++        }
++        salvando = true;
++        await update(ref(db), alteracoes);
++        if (auth.currentUser?.uid !== user.uid || userRole !== 'professor') {
++            return { success: false, error: 'Sua sessão mudou. Faça login novamente.' };
++        }
++        Object.assign(userExtraInfo, campos);
++        localStorage.setItem('turmaAtual', JSON.stringify(turma));
++        for (const campo of ['turmaAtualId', 'turmaAtualNome', 'turmaAtualCodigo']) {
++            localStorage.setItem(campo, campos[campo]);
++        }
++        window.senaiTurmaAtualId = turma.id;
++        return { success: true, turma };
++    } catch (error) {
++        console.error('Erro ao acessar turma do professor:', error);
++        const permissao = /permission|denied/i.test(String(error.code || ''));
++        return { success: false, error: permissao
++            ? 'Você não tem permissão para concluir esta operação.'
++            : salvando ? 'Não foi possível salvar a turma atual. Tente novamente.'
++                : 'Não foi possível consultar a turma. Verifique sua conexão e tente novamente.' };
++    }
++}
++
++async function entrarNaTurma(turmaId, codigoInformado, userUid, role) {
+     if (role === 'aluno') {
+         if (auth.currentUser?.uid !== userUid) {
+             return { success: false, error: 'Sua sessão mudou. Faça login novamente.' };
+         }
+         return entrarAlunoPorCodigo(codigoInformado, turmaId);
+     }
+-
+-    try {
+-
+-        if (
+-            !turmaId ||
+-            !userUid
+-        ) {
+-
+-            return {
+-
+-                success:
+-                    false,
+-
+-                error:
+-                    'Dados insuficientes para entrar na turma.'
+-
+-            };
+-
+-        }
+-
+-
+-        const snapshot =
+-            await get(
+-                ref(
+-                    db,
+-                    `turmas/${turmaId}`
+-                )
+-            );
+-
+-
+-        if (
+-            !snapshot.exists()
+-        ) {
+-
+-            return {
+-
+-                success:
+-                    false,
+-
+-                error:
+-                    'Turma não encontrada.'
+-
+-            };
+-
+-        }
+-
+-
+-        const turma =
+-            snapshot.val();
+-
+-
+-        if (
+-            turma.ativo ===
+-            false
+-        ) {
+-
+-            return {
+-
+-                success:
+-                    false,
+-
+-                error:
+-                    'Esta turma está desativada.'
+-
+-            };
+-
+-        }
+-
+-
+-        const codigoBanco =
+-            String(
+-                turma.codigo ||
+-                ''
+-            )
+-                .trim()
+-                .toUpperCase();
+-
+-
+-        const codigoDigitado =
+-            String(
+-                codigoInformado ||
+-                ''
+-            )
+-                .trim()
+-                .toUpperCase();
+-
+-
+-        if (
+-            codigoBanco !==
+-            codigoDigitado
+-        ) {
+-
+-            return {
+-
+-                success:
+-                    false,
+-
+-                error:
+-                    'Código da turma incorreto.'
+-
+-            };
+-
+-        }
+-
+-
+-        if (
+-            role ===
+-            'professor'
+-        ) {
+-
+-            const possuiAcesso =
+-
+-                String(
+-                    turma.criadoPorUid ||
+-                    ''
+-                ) ===
+-                String(
+-                    userUid
+-                ) ||
+-
+-                Boolean(
+-                    turma.professores &&
+-                    (
+-                        Array.isArray(
+-                            turma.professores
+-                        )
+-
+-                            ? turma.professores.some(
+-                                item =>
+-                                    String(
+-                                        item?.uid ||
+-                                        ''
+-                                    ) ===
+-                                    String(
+-                                        userUid
+-                                    )
+-                            )
+-
+-                            : turma.professores[
+-                                userUid
+-                            ]
+-                    )
+-                );
+-
+-
+-            if (
+-                !possuiAcesso
+-            ) {
+-
+-                return {
+-
+-                    success:
+-                        false,
+-
+-                    error:
+-                        'Você não está vinculado a esta turma.'
+-
+-                };
+-
+-            }
+-
+-        }
+-
+-
+-        localStorage.setItem(
+-            'turmaAtualId',
+-            turmaId
+-        );
+-
+-
+-        localStorage.setItem(
+-            'turmaAtualNome',
+-            turma.nome ||
+-            ''
+-        );
+-
+-
+-        localStorage.setItem(
+-            'turmaAtualCodigo',
+-            turma.codigo ||
+-            ''
+-        );
+-
+-
+-        userExtraInfo.turmaAtualId =
+-            turmaId;
+-
+-
+-        userExtraInfo.turmaAtualNome =
+-            turma.nome ||
+-            '';
+-
+-
+-        userExtraInfo.turmaAtualCodigo =
+-            turma.codigo ||
+-            '';
+-
+-
+-        window.senaiTurmaAtualId =
+-            String(
+-                turmaId
+-            );
+-
+-
+-        return {
+-
+-            success:
+-                true,
+-
+-            turma: {
+-
+-                id:
+-                    turmaId,
+-
+-                ...turma
+-
+-            }
+-
+-        };
+-
+-
+-    } catch (error) {
+-
+-        console.error(
+-            'Erro ao entrar na turma:',
+-            error
+-        );
+-
+-
+-        return {
+-
+-            success:
+-                false,
+-
+-            error:
+-                error.message
+-
+-        };
+-
+-    }
+-
++    if (role !== 'professor' || auth.currentUser?.uid !== userUid) {
++        return { success: false, error: 'Você não possui acesso a esta turma.' };
++    }
++    return acessarTurmaDoProfessor(turmaId);
+ }
+ 
+ 
+@@ -3692,6 +3478,11 @@
+     userUid,
+     turma
+ ) {
++
++    if (userRole === 'professor') {
++        if (auth.currentUser?.uid !== userUid) return { success: false, error: 'Sua sessão mudou.' };
++        return acessarTurmaDoProfessor(turma?.id);
++    }
+ 
+     try {
+ 
+@@ -4447,6 +4238,8 @@
+     removerTurma,
+ 
+     entrarNaTurma,
++    acessarTurmaDoProfessor,
++    professorPertenceTurma,
+ 
+     entrarAlunoPorCodigo,
+ 
+diff --git a/index.html b/index.html
+--- a/index.html
++++ b/index.html
+@@ -512,32 +512,6 @@
+         <!-- =================================================
+              CÓDIGO
+         ================================================== -->
+-
+-        <div
+-            class="turma-code-input">
+-
+-
+-            <label>
+-
+-                <i
+-                    class="fas fa-key">
+-                </i>
+-
+-                Digite o código da turma
+-
+-            </label>
+-
+-
+-            <input
+-                type="text"
+-                id="codigoTurmaEntrada"
+-                placeholder="Digite o código mostrado acima"
+-                autocomplete="off"
+-                maxlength="30">
+-
+-
+-        </div>
+-
+ 
+         <!-- =================================================
+              ENTRAR
+diff --git a/tests/etapa5.cjs b/tests/etapa5.cjs
+new file mode 100644
+--- /dev/null
++++ b/tests/etapa5.cjs
+@@ -0,0 +1,213 @@
++// Execute: node tests/etapa5.cjs. Firebase and DOM are simulated; no remote writes.
++const { readFileSync } = require('node:fs');
++const vm = require('node:vm');
++const assert = require('node:assert/strict');
++const path = require('node:path');
++const root = path.join(__dirname, '..');
++const authSource = readFileSync(path.join(root, 'auth.js'), 'utf8');
++const appSource = readFileSync(path.join(root, 'app.js'), 'utf8');
++function extract(source, name) {
++    const start = source.search(new RegExp(`(?:async )?function ${name}\\(`));
++    assert.ok(start >= 0, name);
++    return source.slice(start, source.indexOf('\n}', start) + 2);
++}
++const storage = new Map();
++const records = {};
++let writes = [], reads = [], failRead = null, failWrite = null, holdWrite = null;
++const elements = new Map();
++const buttons = [{ disabled: false }];
++const rendered = [];
++const c = vm.createContext({
++    console: { error() {}, warn() {} }, Date, String, Object, Array, Boolean,
++    auth: { currentUser: { uid: 'p1', email: 'p1@example.com' } },
++    userRole: 'professor', isOnline: true, userExtraInfo: {}, db: {},
++    currentUser: { uid: 'p1', email: 'p1@example.com' }, currentUserRole: 'professor',
++    currentTurma: null, turmaSelecionada: null, processandoEntradaProfessor: false,
++    ref: (_, key = '') => key,
++    get: async key => {
++        reads.push(key);
++        if (failRead) throw failRead;
++        return { exists: () => records[key] !== undefined, val: () => records[key] };
++    },
++    update: async (_, data) => {
++        if (holdWrite) await holdWrite;
++        if (failWrite) throw failWrite;
++        writes.push(data);
++    },
++    sanitizeEmail: email => email.replace(/\./g, ','),
++    localStorage: {
++        setItem: (key, value) => storage.set(key, String(value)),
++        getItem: key => storage.get(key) ?? null,
++        removeItem: key => storage.delete(key)
++    },
++    document: {
++        querySelectorAll: () => buttons,
++        getElementById: id => {
++            if (!elements.has(id)) elements.set(id, { replaceChildren() { this.cleared = true; }, style: {} });
++            return elements.get(id);
++        }
++    },
++    window: { showTab: tab => { c.lastTab = tab; } },
++    alert: message => { c.lastAlert = message; },
++    mostrarApp() {}, atualizarTurmaInterface() {}, closeSidebar() {},
++    renderDashboard: async () => rendered.push(['dashboard', storage.get('turmaAtualId')]),
++    renderMateriais: async () => rendered.push(['materiais', storage.get('turmaAtualId')]),
++    renderMoinho: async () => rendered.push(['moinho', storage.get('turmaAtualId')]),
++    renderHistorico: async () => rendered.push(['historico', storage.get('turmaAtualId')])
++});
++for (const name of ['professorPertenceTurma', 'acessarTurmaDoProfessor', 'entrarNaTurma', 'salvarTurmaAtual']) {
++    vm.runInContext(extract(authSource, name), c);
++}
++for (const name of ['definirTurmaAtual', 'abrirSistemaNaTurma', 'abrirTurmaDoProfessor', 'confirmarEntradaNaTurma']) {
++    vm.runInContext(extract(appSource, name), c);
++}
++let count = 0;
++async function test(name, fn) { await fn(); console.log(`OK ${++count}: ${name}`); }
++(async () => {
++    records['turmas/A'] = { nome: 'A', codigo: '123456', ativo: true, professores: { p1: { uid: 'p1' } } };
++    records['turmas/B'] = { nome: 'B', codigo: '654321', ativo: true, professores: { p1: true } };
++    records['turmas/X'] = { nome: 'X', codigo: '123456', professores: { p2: { uid: 'p2' } } };
++    await test('login remains on Minhas Turmas and discards cached context', () => {
++        const f = extract(appSource, 'prepararPosLogin');
++        assert.match(f, /definirTurmaAtual\(null\)/);
++        assert.match(f, /showTab\(\s*'turmas'/);
++        assert.doesNotMatch(appSource, /currentTurma\s*=\s*turmaParseada/);
++    });
++    await test('card calls direct opening; professor gate has no code input', () => {
++        assert.match(extract(appSource, 'renderTurmasPagina'), /abrirTurmaDoProfessor\(turma.id\)/);
++        const html = readFileSync(path.join(root, 'index.html'), 'utf8');
++        const professor = html.split('<template id="turmaGateProfessorTemplate">')[1].split('</template>')[0];
++        assert.doesNotMatch(professor, /id="codigoTurmaEntrada"/);
++    });
++    await test('linked professor enters directly without code', async () => {
++        await c.abrirTurmaDoProfessor('A');
++        assert.equal(c.currentTurma.id, 'A'); assert.equal(c.lastTab, 'dashboard');
++        assert.equal(writes.length, 1);
++        assert.equal(writes[0]['usuarios/p1/turmaAtualId'], 'A');
++        assert.equal(writes[0]['professores/p1@example,com/turmaAtualId'], 'A');
++    });
++    await test('creator UID and additional professor UID are accepted', () => {
++        assert.equal(c.professorPertenceTurma({ criadoPorUid: 'p1' }, c.currentUser), true);
++        assert.equal(c.professorPertenceTurma({ criadoPorUid: 'p2', professores: { p1: { uid: 'p1' } } }, c.currentUser), true);
++    });
++    await test('name and conflicting legacy identifiers do not grant access', () => {
++        for (const turma of [
++            { professores: ['p1'] }, { criadoPorNome: 'p1' },
++            { professores: [{ uid: 'p2', email: 'p1@example.com' }] },
++            { criadoPorUid: 'p2', criadoPorEmail: 'p1@example.com' },
++            { professores: { p1: { uid: 'p2' } } }
++        ]) assert.equal(c.professorPertenceTurma(turma, c.currentUser), false);
++        assert.equal(c.professorPertenceTurma({ professores: [{ email: 'P1@example.com' }] }, c.currentUser), true);
++        assert.equal(c.professorPertenceTurma({ criadoPorEmail: 'p1@example.com' }, c.currentUser), true);
++    });
++    await test('unlinked professor is denied even knowing code', async () => {
++        const before = writes.length;
++        const r = await c.entrarNaTurma('X', '123456', 'p1', 'professor');
++        assert.equal(r.success, false); assert.match(r.error, /não possui acesso/);
++        assert.equal(writes.length, before); assert.equal(c.currentTurma.id, 'A');
++    });
++    await test('A to B synchronizes every local source and all module renders', async () => {
++        rendered.length = 0;
++        await c.abrirTurmaDoProfessor('B');
++        assert.equal(c.currentTurma.id, 'B'); assert.equal(c.turmaSelecionada.id, 'B');
++        assert.equal(c.window.senaiTurmaAtualId, 'B'); assert.equal(c.userExtraInfo.turmaAtualId, 'B');
++        assert.equal(storage.get('turmaAtualId'), 'B'); assert.equal(JSON.parse(storage.get('turmaAtual')).id, 'B');
++        assert.equal(storage.get('turmaAtualCodigo'), '654321');
++        assert.deepEqual(rendered, ['dashboard', 'materiais', 'moinho', 'historico'].map(name => [name, 'B']));
++        for (const id of ['tabDashboard', 'tabMateriais', 'tabMoinho', 'tabPerfil']) assert.equal(elements.get(id).cleared, true);
++    });
++    await test('double click performs one read, one persistence and one opening', async () => {
++        let release;
++        holdWrite = new Promise(resolve => { release = resolve; });
++        const before = writes.length, beforeReads = reads.length;
++        const first = c.abrirTurmaDoProfessor('A');
++        await Promise.resolve();
++        const second = c.abrirTurmaDoProfessor('A');
++        assert.equal(buttons[0].disabled, true);
++        release(); await Promise.all([first, second]); holdWrite = null;
++        assert.equal(writes.length - before, 1); assert.equal(reads.length - beforeReads, 1);
++        assert.equal(buttons[0].disabled, false);
++    });
++    await test('removed membership is re-read despite old localStorage', async () => {
++        delete records['turmas/A'].professores.p1;
++        const r = await c.acessarTurmaDoProfessor('A');
++        assert.equal(r.success, false);
++    });
++    await test('missing, inactive, permission, connection and save failures are distinguished', async () => {
++        assert.match((await c.acessarTurmaDoProfessor('missing')).error, /não encontrada/);
++        records['turmas/B'].ativo = false;
++        assert.match((await c.acessarTurmaDoProfessor('B')).error, /desativada/);
++        records['turmas/B'].ativo = true;
++        failRead = { code: 'PERMISSION_DENIED' };
++        assert.match((await c.acessarTurmaDoProfessor('B')).error, /permissão/);
++        failRead = new Error('network');
++        assert.match((await c.acessarTurmaDoProfessor('B')).error, /conexão/); failRead = null;
++        const before = storage.get('turmaAtualId');
++        failWrite = new Error('failed');
++        assert.match((await c.acessarTurmaDoProfessor('B')).error, /salvar/); failWrite = null;
++        assert.equal(storage.get('turmaAtualId'), before);
++    });
++    await test('unauthenticated user, wrong role and switched session cannot open', async () => {
++        c.userRole = 'aluno'; assert.equal((await c.acessarTurmaDoProfessor('B')).success, false);
++        c.userRole = 'professor';
++        assert.equal((await c.entrarNaTurma('B', '', 'p2', 'professor')).success, false);
++    });
++    await test('student confirmation still delegates to code flow', async () => {
++        let calls = 0; c.confirmarEntradaAlunoPorCodigo = async () => { calls++; };
++        c.currentUserRole = 'aluno'; await c.confirmarEntradaNaTurma(); assert.equal(calls, 1);
++        c.currentUserRole = 'professor';
++        assert.match(extract(appSource, 'mostrarGate'), /codigoTurmaEntrada/);
++    });
++    // Exercise the unchanged student functions with the same simulated Firebase.
++    for (const name of ['normalizarCodigoTurma', 'erroTurmaAluno', 'falhaAcessoTurmaAluno',
++        'turmaValidaParaAluno', 'alunoEstaNaTurma', 'carregarContextoAluno',
++        'buscarTurmaPorCodigo', 'persistirMatriculaAluno', 'entrarAlunoPorCodigo']) {
++        vm.runInContext(extract(authSource, name), c);
++    }
++    c.auth.currentUser = { uid: 'student', email: 'student@example.com' };
++    records['usuarios/student'] = { uid: 'student', role: 'aluno', nome: 'Student' };
++    records['alunos/student@example,com'] = { uid: 'student', role: 'aluno' };
++    records['turmas'] = { B: records['turmas/B'] };
++    await test('student code remains mandatory', async () => {
++        assert.equal((await c.entrarAlunoPorCodigo('')).success, false);
++    });
++    await test('valid student code persists UID enrollment and profile references', async () => {
++        const r = await c.entrarAlunoPorCodigo('654321');
++        assert.equal(r.success, true, r.error);
++        const w = writes.at(-1);
++        assert.equal(w['turmas/B/alunos/student/uid'], 'student');
++        assert.equal(w['usuarios/student/turmaAtualId'], 'B');
++    });
++    await test('legacy alphanumeric code still enrolls student', async () => {
++        records['turmas/B'].codigo = 'LEGADO-ABC';
++        const r = await c.entrarAlunoPorCodigo(' legado-abc ');
++        assert.equal(r.success, true, r.error);
++    });
++    await test('creation retains six-digit generator and selected professors', () => {
++        assert.match(extract(authSource, 'criarTurma'), /gerarCodigoTurmaDisponivel\(\)/);
++        assert.match(extract(authSource, 'criarTurma'), /professoresDaTurma\[professor.uid\]/);
++        c.crypto = require('node:crypto').webcrypto;
++        vm.runInContext(extract(authSource, 'gerarCodigoTurma'), c);
++        for (let i = 0; i < 1000; i++) assert.match(c.gerarCodigoTurma(), /^\d{6}$/);
++    });
++    await test('real module readers resolve B paths after switching context', async () => {
++        c.window.senaiTurmaAtualId = 'B'; storage.set('turmaAtualId', 'B');
++        for (const [file, idFunction, readFunction, suffix] of [
++            ['dashboard.js', 'obterTurmaAtualId', 'getCollection', 'materiais'],
++            ['models/materiais.js', 'obterTurmaId', 'getMateriais', 'materiais'],
++            ['models/moinho.js', 'obterTurmaId', 'getMoinho', 'moinho']
++        ]) {
++            const source = readFileSync(path.join(root, file), 'utf8');
++            const actualReadFunction = file === 'dashboard.js'
++                ? source.match(/async function (\w+)\(\s*collectionName/)[1] : readFunction;
++            vm.runInContext(extract(source, idFunction), c);
++            if (file === 'models/materiais.js') vm.runInContext(extract(source, 'obterCaminhoMateriais'), c);
++            vm.runInContext(extract(source, actualReadFunction), c);
++            c.isUsingLocalData = false; c.localData = { materiais: [], moinho: {} };
++            const before = reads.length;
++            await c[actualReadFunction](suffix);
++            assert.equal(reads[before], `turmas/B/${suffix}`, file);
++        }
++    });
++    console.log(`${count} checks passed (simulated Firebase/DOM; no live browser).`);
++})().catch(error => { console.error(error); process.exitCode = 1; });

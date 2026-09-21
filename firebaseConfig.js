@@ -5,17 +5,17 @@
 
 import {
     initializeApp
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+} from "firebase/app";
 
 import {
     getAuth,
     setPersistence,
     browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+} from "firebase/auth";
 
 import {
     getDatabase
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+} from "firebase/database";
 
 // ============================================================
 // CONFIGURAÇÃO DO NOVO FIREBASE

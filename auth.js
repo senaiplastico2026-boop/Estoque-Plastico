@@ -32,6 +32,9 @@ import {
 let currentUser = null;
 let userRole = null;
 
+// Aguarda somente a gravação do perfil de um novo aluno.
+let cadastroAlunoPendente = null;
+
 let userExtraInfo = {
     nome: '',
     turno: '',
@@ -985,12 +988,34 @@ async function cadastrarProfessor(
 // CADASTRAR ALUNO
 // ============================================================
 
-async function cadastrarAluno(
-    email,
-    senha,
-    turno,
-    professores
-) {
+async function cadastrarAluno({ nome, email, senha, turno } = {}) {
+
+    nome = String(nome || '').trim();
+    email = String(email || '').trim();
+    senha = String(senha || '').trim();
+
+    if (!nome || !email || !senha) {
+        return { success: false, error: '❌ Preencha nome, e-mail e senha!' };
+    }
+
+    if (senha.length < 6) {
+        return { success: false, error: '❌ A senha deve ter pelo menos 6 caracteres.' };
+    }
+
+    if (!['Manhã', 'Tarde', 'Noite'].includes(turno)) {
+        return { success: false, error: '❌ Selecione um turno válido!' };
+    }
+
+    if (cadastroAlunoPendente) {
+        return { success: false, error: '⚠️ Aguarde a conclusão do cadastro em andamento.' };
+    }
+
+    let concluirCadastro;
+    let usuarioCriado = null;
+    let perfilSalvo = false;
+    cadastroAlunoPendente = new Promise(resolve => {
+        concluirCadastro = resolve;
+    });
 
     try {
 
@@ -998,11 +1023,6 @@ async function cadastrarAluno(
             sanitizeEmail(
                 email
             );
-
-
-        const nome =
-            email
-                .split('@')[0];
 
 
         const alunoSnapshot =
@@ -1069,15 +1089,11 @@ async function cadastrarAluno(
             userCredential.user;
 
 
-        const professoresVinculados =
-            Array.isArray(
-                professores
-            )
-                ? professores
-                : [];
-
+        usuarioCriado = user;
 
         const userData = {
+
+            uid: user.uid,
 
             nome,
 
@@ -1086,12 +1102,9 @@ async function cadastrarAluno(
             role:
                 'aluno',
 
-            turno:
-                turno ||
-                'Manhã',
+            turno,
 
-            professoresVinculados:
-                professoresVinculados,
+            professoresVinculados: [],
 
             dataCriacao:
                 new Date()
@@ -1136,6 +1149,10 @@ async function cadastrarAluno(
         );
 
 
+        resetarDadosLocais();
+        userExtraInfo = { ...userExtraInfo, ...userData };
+        perfilSalvo = true;
+
         console.log(
             `✅ Aluno ${email} cadastrado!`
         );
@@ -1159,6 +1176,15 @@ async function cadastrarAluno(
         );
 
 
+        // Não libera uma sessão recém-criada com perfil incompleto.
+        if (usuarioCriado && auth.currentUser?.uid === usuarioCriado.uid) {
+            try {
+                await signOut(auth);
+            } catch (erroLogout) {
+                console.error('Erro ao encerrar cadastro incompleto:', erroLogout);
+            }
+        }
+
         const mensagens = {
 
             'auth/email-already-in-use':
@@ -1181,6 +1207,9 @@ async function cadastrarAluno(
 
         };
 
+    } finally {
+        concluirCadastro(perfilSalvo ? usuarioCriado.uid : null);
+        cadastroAlunoPendente = null;
     }
 
 }
@@ -2500,35 +2529,26 @@ async function saveUserExtraInfo(
 // TURMAS
 // ============================================================
 
+const MAX_TENTATIVAS_CODIGO = 50;
+
 function gerarCodigoTurma() {
+    const valor = crypto.getRandomValues(new Uint32Array(1))[0];
+    return String(valor % 1000000).padStart(6, '0');
+}
 
-    const caracteres =
-        'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+async function gerarCodigoTurmaDisponivel() {
+    // Falhas de leitura devem interromper a criação, nunca significar lista vazia.
+    const snapshot = await get(ref(db, 'turmas'));
+    const ocupados = new Set(Object.values(snapshot.val() || {})
+        .map(turma => normalizarCodigoTurma(turma?.codigo)));
 
-
-    let codigo =
-        '';
-
-
-    for (
-        let i = 0;
-        i < 6;
-        i++
-    ) {
-
-        codigo +=
-            caracteres[
-                Math.floor(
-                    Math.random() *
-                    caracteres.length
-                )
-            ];
-
+    // A consulta evita colisões conhecidas, mas não reserva o código entre clientes.
+    // Sem Rules conhecidas, não dependemos de um novo índice de reserva.
+    for (let tentativa = 0; tentativa < MAX_TENTATIVAS_CODIGO; tentativa++) {
+        const codigo = gerarCodigoTurma();
+        if (!ocupados.has(codigo)) return codigo;
     }
-
-
-    return codigo;
-
+    throw new Error('Não foi possível gerar um código disponível. Tente novamente.');
 }
 
 
@@ -2595,261 +2615,67 @@ async function listarTurmas() {
 // CRIAR TURMA
 // ============================================================
 
-async function criarTurma(
-    nomeTurma,
-    codigo,
-    professorPrincipal
-) {
-
+async function criarTurma({ nome, descricao = '', professores = [], professorPrincipal }) {
     try {
-
-        if (
-            !nomeTurma ||
-            !codigo ||
-            !professorPrincipal?.uid
-        ) {
-
-            return {
-
-                success:
-                    false,
-
-                error:
-                    'Preencha corretamente os dados da turma.'
-
-            };
-
+        nome = String(nome || '').trim();
+        if (!nome || !professorPrincipal?.uid ||
+            auth.currentUser?.uid !== professorPrincipal.uid || userRole !== 'professor') {
+            return { success: false, error: 'Preencha corretamente os dados da turma.' };
         }
+        if (!isOnline) throw new Error('Sem conexão. Reconecte e tente criar a turma novamente.');
 
-
-        const turmas =
-            await listarTurmas();
-
-
-        const codigoNormalizado =
-            String(
-                codigo
-            )
-                .trim()
-                .toUpperCase();
-
-
-        const codigoExiste =
-            turmas.some(
-                turma =>
-                    String(
-                        turma.codigo ||
-                        ''
-                    )
-                        .trim()
-                        .toUpperCase() ===
-                    codigoNormalizado
-            );
-
-
-        if (
-            codigoExiste
-        ) {
-
-            return {
-
-                success:
-                    false,
-
-                error:
-                    'Este código de turma já está sendo utilizado.'
-
+        const codigo = await gerarCodigoTurmaDisponivel();
+        const turmaId = push(ref(db, 'turmas')).key;
+        const nomeProfessor = professorPrincipal.nome || professorPrincipal.email?.split('@')[0] || 'Professor';
+        const professoresDaTurma = {};
+        const agora = Date.now();
+        for (const professor of [...professores, {
+            uid: professorPrincipal.uid,
+            nome: nomeProfessor,
+            email: auth.currentUser.email || ''
+        }]) {
+            if (!professor.uid) continue;
+            professoresDaTurma[professor.uid] = {
+                uid: professor.uid,
+                nome: professor.nome || 'Professor',
+                email: professor.email || '',
+                tipo: professor.uid === professorPrincipal.uid ? 'criador' : 'vinculado',
+                vinculadoEm: agora
             };
-
         }
-
-
-        const turmaRef =
-            push(
-                ref(
-                    db,
-                    'turmas'
-                )
-            );
-
-
-        const turmaId =
-            turmaRef.key;
-
-
-        const nomeProfessor =
-            professorPrincipal.nome ||
-            professorPrincipal.email
-                ?.split('@')[0] ||
-            'Professor';
-
-
         const turmaData = {
-
-            id:
-                turmaId,
-
-            nome:
-                String(
-                    nomeTurma
-                ).trim(),
-
-            codigo:
-                codigoNormalizado,
-
-            criadoPorUid:
-                professorPrincipal.uid,
-
-            criadoPorNome:
-                nomeProfessor,
-
-            criadoPorEmail:
-                professorPrincipal.email ||
-                '',
-
-            criadoEm:
-                Date.now(),
-
-            ativo:
-                true,
-
-
-            professores: {
-
-                [professorPrincipal.uid]:
-                    {
-
-                        uid:
-                            professorPrincipal.uid,
-
-                        nome:
-                            nomeProfessor,
-
-                        email:
-                            professorPrincipal.email ||
-                            '',
-
-                        tipo:
-                            'criador',
-
-                        vinculadoEm:
-                            Date.now()
-
-                    }
-
-            },
-
-
-            alunos:
-                {},
-
-
-            materiais:
-                {},
-
-            lixeira_materiais:
-                {},
-
-            moinho:
-                {
-
-                    materiais:
-                        [],
-
-                    capacidadeMax:
-                        900,
-
-                    historico:
-                        []
-
-                },
-
-            historico:
-                {}
-
+            id: turmaId, nome, codigo, descricao: String(descricao).trim(),
+            criadoEm: new Date().toLocaleString('pt-BR'),
+            criadoPorUid: professorPrincipal.uid,
+            criadoPorNome: nomeProfessor,
+            criadoPorEmail: auth.currentUser.email || '',
+            ativo: true, professores: professoresDaTurma,
+            alunos: {}, materiais: {}, lixeira_materiais: {},
+            moinho: { materiais: [], capacidadeMax: 900, historico: [] },
+            historico: {}
         };
-
-
-        await set(
-            turmaRef,
-            turmaData
-        );
-
-
-        await update(
-            ref(
-                db,
-                `usuarios/${professorPrincipal.uid}`
-            ),
-            {
-
-                [`turmasVinculadas/${turmaId}`]:
-                    true,
-
-                turmaAtualId:
-                    turmaId,
-
-                turmaAtualNome:
-                    turmaData.nome,
-
-                turmaAtualCodigo:
-                    turmaData.codigo
-
+        const alteracoes = { [`turmas/${turmaId}`]: turmaData };
+        // Inclui o criador nos dois cadastros, mesmo desmarcado no checklist.
+        for (const professor of Object.values(professoresDaTurma)) {
+            alteracoes[`usuarios/${professor.uid}/turmasVinculadas/${turmaId}`] = true;
+            if (professor.email) {
+                alteracoes[`professores/${sanitizeEmail(professor.email)}/turmasVinculadas/${turmaId}`] = true;
             }
-        );
-
-
-        if (
-            professorPrincipal.email
-        ) {
-
-            await update(
-                ref(
-                    db,
-                    `professores/${sanitizeEmail(professorPrincipal.email)}`
-                ),
-                {
-
-                    [`turmasVinculadas/${turmaId}`]:
-                        true
-
-                }
-            );
-
         }
-
-
-        return {
-
-            success:
-                true,
-
-            turma:
-                turmaData
-
-        };
-
-
+        const perfil = `usuarios/${professorPrincipal.uid}`;
+        alteracoes[`${perfil}/turmaAtualId`] = turmaId;
+        alteracoes[`${perfil}/turmaAtualNome`] = turmaData.nome;
+        alteracoes[`${perfil}/turmaAtualCodigo`] = codigo;
+        if (auth.currentUser?.uid !== professorPrincipal.uid) {
+            throw new Error('Sua sessão mudou. Faça login novamente.');
+        }
+        // Turma e referências são confirmadas juntas; não há fallback parcial.
+        await update(ref(db), alteracoes);
+        return { success: true, turma: turmaData };
     } catch (error) {
-
-        console.error(
-            'Erro ao criar turma:',
-            error
-        );
-
-
-        return {
-
-            success:
-                false,
-
-            error:
-                error.message
-
-        };
-
+        console.error('Erro ao criar turma:', error);
+        return { success: false, error: error.message };
     }
-
 }
 
 
@@ -2876,53 +2702,9 @@ async function listarTurmasDoProfessor(
             await listarTurmas();
 
 
-        return turmas.filter(
-            turma => {
-
-                if (
-                    turma.criadoPorUid ===
-                    professorUid
-                ) {
-
-                    return true;
-
-                }
-
-
-                if (
-                    turma.professores &&
-                    !Array.isArray(
-                        turma.professores
-                    ) &&
-                    turma.professores[
-                        professorUid
-                    ]
-                ) {
-
-                    return true;
-
-                }
-
-
-                if (
-                    Array.isArray(
-                        turma.professores
-                    )
-                ) {
-
-                    return turma.professores.some(
-                        item =>
-                            item?.uid ===
-                            professorUid
-                    );
-
-                }
-
-
-                return false;
-
-            }
-        );
+        const professor = auth.currentUser?.uid === professorUid
+            ? auth.currentUser : { uid: professorUid };
+        return turmas.filter(turma => professorPertenceTurma(turma, professor));
 
 
     } catch (error) {
@@ -3408,340 +3190,283 @@ async function removerTurma(
 
 
 // ============================================================
+// MATRÍCULA DO ALUNO: CÓDIGO E VÍNCULOS PERSISTIDOS
+// ============================================================
+
+function normalizarCodigoTurma(codigo) {
+    return String(codigo ?? '').trim().toUpperCase();
+}
+
+function erroTurmaAluno(code, message) {
+    return Object.assign(new Error(message), { code });
+}
+
+function turmaValidaParaAluno(turma) {
+    return turma && typeof turma === 'object' && !Array.isArray(turma) &&
+        typeof turma.nome === 'string' && turma.nome.trim() &&
+        normalizarCodigoTurma(turma.codigo) && turma.ativo !== false;
+}
+
+function alunoEstaNaTurma(turma, uid) {
+    const matricula = turma?.alunos?.[uid];
+    // Aceita também o marcador booleano legado, sempre indexado pelo UID.
+    return matricula === true || Boolean(matricula && typeof matricula === 'object' &&
+        !Array.isArray(matricula) && (!matricula.uid || matricula.uid === uid));
+}
+
+async function carregarContextoAluno() {
+    const user = auth.currentUser;
+    if (!user?.uid || !user.email) {
+        throw erroTurmaAluno('sessao-invalida', 'Sua sessão mudou. Faça login novamente.');
+    }
+    if (!isOnline) {
+        throw erroTurmaAluno('offline', 'Sem conexão. Reconecte-se para acessar sua turma.');
+    }
+    const emailKey = sanitizeEmail(user.email);
+    const [usuarioSnapshot, legadoSnapshot] = await Promise.all([
+        get(ref(db, `usuarios/${user.uid}`)),
+        get(ref(db, `alunos/${emailKey}`))
+    ]);
+    const usuario = usuarioSnapshot.val() || {};
+    const legado = legadoSnapshot.val() || {};
+    const perfil = { ...legado, ...usuario };
+    if (perfil.role !== 'aluno' || (perfil.uid && perfil.uid !== user.uid)) {
+        throw erroTurmaAluno('perfil-invalido', 'Não foi possível confirmar seu cadastro de aluno.');
+    }
+    return { user, emailKey, perfil, usuario, legado };
+}
+
+// Busca temporária no nó existente. Nunca retorna a lista à interface do aluno.
+async function buscarTurmaPorCodigo(codigoInformado) {
+    const codigo = normalizarCodigoTurma(codigoInformado);
+    if (!codigo) {
+        throw erroTurmaAluno('codigo-vazio', 'Digite o código fornecido pelo seu professor.');
+    }
+    const snapshot = await get(ref(db, 'turmas'));
+    const encontradas = Object.entries(snapshot.val() || {})
+        .filter(([, turma]) => normalizarCodigoTurma(turma?.codigo) === codigo);
+    if (encontradas.length !== 1) {
+        throw erroTurmaAluno(encontradas.length ? 'codigo-ambiguo' : 'codigo-inexistente',
+            'Código de turma inválido. Verifique o código informado pelo professor.');
+    }
+    const [id, turma] = encontradas[0];
+    if (!turmaValidaParaAluno(turma)) {
+        throw erroTurmaAluno('turma-invalida',
+            'Código de turma inválido. Verifique o código informado pelo professor.');
+    }
+    return { ...turma, id };
+}
+
+async function persistirMatriculaAluno(turmaId, contexto, codigo = null) {
+    const { user, emailKey, perfil, usuario, legado } = contexto;
+    // Revalida a turma após a busca, inclusive na restauração de uma matrícula.
+    const snapshot = await get(ref(db, `turmas/${turmaId}`));
+    const turma = snapshot.val();
+    const autorizado = codigo === null
+        ? alunoEstaNaTurma(turma, user.uid)
+        : normalizarCodigoTurma(turma?.codigo) === codigo;
+    if (!turmaValidaParaAluno(turma) || !autorizado) {
+        throw erroTurmaAluno('turma-invalida',
+            'Não foi possível validar a turma. Verifique o código informado pelo professor.');
+    }
+    if (auth.currentUser?.uid !== user.uid) {
+        throw erroTurmaAluno('sessao-invalida', 'Sua sessão mudou. Faça login novamente.');
+    }
+    const anterior = turma.alunos?.[user.uid] || {};
+    const aluno = {
+        uid: user.uid,
+        nome: perfil.nome || anterior.nome || 'Aluno',
+        email: user.email,
+        turno: perfil.turno || anterior.turno || '',
+        adicionadoEm: anterior.adicionadoEm ?? anterior.vinculadoEm ?? Date.now()
+    };
+    const camposTurma = {
+        turmaAtualId: turmaId,
+        turmaAtualNome: turma.nome,
+        turmaAtualCodigo: String(turma.codigo),
+        turmaSelecionadaEm: Date.now()
+    };
+    const alteracoes = {};
+    // Folhas individuais preservam outros metadados da matrícula existente.
+    for (const [campo, valor] of Object.entries(aluno)) {
+        alteracoes[`turmas/${turmaId}/alunos/${user.uid}/${campo}`] = valor;
+    }
+    for (const caminho of [`usuarios/${user.uid}`, `alunos/${emailKey}`]) {
+        alteracoes[`${caminho}/turmasVinculadas/${turmaId}`] = true;
+        for (const [campo, valor] of Object.entries(camposTurma)) {
+            alteracoes[`${caminho}/${campo}`] = valor;
+        }
+    }
+    // Uma única escrita: se qualquer caminho for negado, não há gravação parcial.
+    await update(ref(db), alteracoes);
+    if (auth.currentUser?.uid !== user.uid) {
+        throw erroTurmaAluno('sessao-invalida', 'Sua sessão mudou. Faça login novamente.');
+    }
+    userExtraInfo = {
+        ...userExtraInfo,
+        ...perfil,
+        ...camposTurma,
+        turmasVinculadas: {
+            ...(legado.turmasVinculadas || {}),
+            ...(usuario.turmasVinculadas || {}),
+            [turmaId]: true
+        }
+    };
+    return {
+        ...turma,
+        id: turmaId,
+        alunos: { ...turma.alunos, [user.uid]: { ...anterior, ...aluno } }
+    };
+}
+
+function falhaAcessoTurmaAluno(error) {
+    console.error('Falha no acesso do aluno à turma:', error);
+    const code = error.code || 'falha-firebase';
+    const conhecidos = ['codigo-vazio', 'codigo-ambiguo', 'codigo-inexistente',
+        'turma-invalida', 'perfil-invalido', 'sessao-invalida', 'offline'];
+    return {
+        success: false,
+        code,
+        error: conhecidos.includes(code) ? error.message
+            : /permission.denied/i.test(code)
+                ? 'Não foi possível acessar a turma com as permissões atuais. Entre em contato com o responsável pelo sistema.'
+                : 'Não foi possível consultar ou salvar sua matrícula. Verifique sua conexão e tente novamente.'
+    };
+}
+
+async function entrarAlunoPorCodigo(codigoInformado, turmaIdEsperada = null) {
+    try {
+        const codigo = normalizarCodigoTurma(codigoInformado);
+        if (!codigo) {
+            throw erroTurmaAluno('codigo-vazio', 'Digite o código fornecido pelo seu professor.');
+        }
+        const contexto = await carregarContextoAluno();
+        const turma = await buscarTurmaPorCodigo(codigo);
+        if (turmaIdEsperada && turma.id !== turmaIdEsperada) {
+            throw erroTurmaAluno('turma-invalida', 'Código de turma inválido. Verifique o código informado pelo professor.');
+        }
+        return { success: true, turma: await persistirMatriculaAluno(turma.id, contexto, codigo) };
+    } catch (error) {
+        return falhaAcessoTurmaAluno(error);
+    }
+}
+
+async function restaurarTurmaDoAluno() {
+    try {
+        const contexto = await carregarContextoAluno();
+        const { user, usuario, legado } = contexto;
+        const vinculos = { ...(legado.turmasVinculadas || {}), ...(usuario.turmasVinculadas || {}) };
+        const candidatos = [...new Set([
+            usuario.turmaAtualId,
+            legado.turmaAtualId,
+            ...Object.keys(vinculos).filter(id => vinculos[id] === true).sort()
+        ])].filter(id => typeof id === 'string' && id && !/[.#$\[\]\/]/.test(id));
+        for (const id of candidatos) {
+            const snapshot = await get(ref(db, `turmas/${id}`));
+            const turma = snapshot.val();
+            if (turmaValidaParaAluno(turma) && alunoEstaNaTurma(turma, user.uid)) {
+                // Recuperação pontual: a matrícula na turma confirma o vínculo e
+                // permite completar os índices ausentes, sem usar professoresVinculados.
+                return { success: true, turma: await persistirMatriculaAluno(id, contexto) };
+            }
+        }
+        // Índice de perfil sem matrícula não concede acesso. Registro apenas na
+        // turma, sem nenhum ID no perfil, será recuperado quando o aluno informar o código.
+        return { success: true, turma: null };
+    } catch (error) {
+        return falhaAcessoTurmaAluno(error);
+    }
+}
+
+
+// ============================================================
 // ENTRAR NA TURMA
 // ============================================================
 
-async function entrarNaTurma(
-    turmaId,
-    codigoInformado,
-    userUid,
-    role
-) {
+// A mesma política atende listagem e abertura; nome nunca comprova vínculo.
+function professorPertenceTurma(turma, professor) {
+    if (!turma || !professor?.uid) return false;
+    const uid = String(professor.uid);
+    const email = String(professor.email || '').trim().toLowerCase();
+    const professores = turma.professores || {};
+    const direto = !Array.isArray(professores) && professores[uid];
+    if (direto === true || (direto && typeof direto === 'object' &&
+        !Array.isArray(direto) && (!direto.uid || String(direto.uid) === uid))) return true;
+    const vinculado = Object.values(professores).some(item => {
+        if (!item || typeof item !== 'object') return false;
+        if (item.uid) return String(item.uid) === uid;
+        // Legado: e-mail exato apenas quando o registro não possui UID.
+        return Boolean(email && String(item.email || '').trim().toLowerCase() === email);
+    });
+    if (vinculado) return true;
+    if (turma.criadoPorUid) return String(turma.criadoPorUid) === uid;
+    return Boolean(email && String(turma.criadoPorEmail || '').trim().toLowerCase() === email);
+}
 
+async function acessarTurmaDoProfessor(turmaId) {
+    const user = auth.currentUser;
+    let salvando = false;
     try {
-
-        if (
-            !turmaId ||
-            !userUid
-        ) {
-
-            return {
-
-                success:
-                    false,
-
-                error:
-                    'Dados insuficientes para entrar na turma.'
-
-            };
-
+        if (!user?.uid || userRole !== 'professor') {
+            return { success: false, error: 'Faça login como professor para acessar suas turmas.' };
         }
-
-
-        const snapshot =
-            await get(
-                ref(
-                    db,
-                    `turmas/${turmaId}`
-                )
-            );
-
-
-        if (
-            !snapshot.exists()
-        ) {
-
-            return {
-
-                success:
-                    false,
-
-                error:
-                    'Turma não encontrada.'
-
-            };
-
+        if (!isOnline) return { success: false, error: 'Sem conexão. Reconecte-se para acessar sua turma.' };
+        if (!turmaId || /[.#$\[\]\/]/.test(String(turmaId))) {
+            return { success: false, error: 'Turma não encontrada.' };
         }
-
-
-        const turma =
-            snapshot.val();
-
-
-        if (
-            turma.ativo ===
-            false
-        ) {
-
-            return {
-
-                success:
-                    false,
-
-                error:
-                    'Esta turma está desativada.'
-
-            };
-
+        const snapshot = await get(ref(db, `turmas/${turmaId}`));
+        if (!snapshot.exists()) return { success: false, error: 'Turma não encontrada.' };
+        const turma = { ...snapshot.val(), id: String(turmaId) };
+        if (!professorPertenceTurma(turma, user)) {
+            return { success: false, error: 'Você não possui acesso a esta turma.' };
         }
-
-
-        const codigoBanco =
-            String(
-                turma.codigo ||
-                ''
-            )
-                .trim()
-                .toUpperCase();
-
-
-        const codigoDigitado =
-            String(
-                codigoInformado ||
-                ''
-            )
-                .trim()
-                .toUpperCase();
-
-
-        if (
-            codigoBanco !==
-            codigoDigitado
-        ) {
-
-            return {
-
-                success:
-                    false,
-
-                error:
-                    'Código da turma incorreto.'
-
-            };
-
+        if (turma.ativo === false) return { success: false, error: 'Esta turma está desativada.' };
+        if (auth.currentUser?.uid !== user.uid || userRole !== 'professor') {
+            return { success: false, error: 'Sua sessão mudou. Faça login novamente.' };
         }
-
-
-        if (
-            role ===
-            'professor'
-        ) {
-
-            const possuiAcesso =
-
-                String(
-                    turma.criadoPorUid ||
-                    ''
-                ) ===
-                String(
-                    userUid
-                ) ||
-
-                Boolean(
-                    turma.professores &&
-                    (
-                        Array.isArray(
-                            turma.professores
-                        )
-
-                            ? turma.professores.some(
-                                item =>
-                                    String(
-                                        item?.uid ||
-                                        ''
-                                    ) ===
-                                    String(
-                                        userUid
-                                    )
-                            )
-
-                            : turma.professores[
-                                userUid
-                            ]
-                    )
-                );
-
-
-            if (
-                !possuiAcesso
-            ) {
-
-                return {
-
-                    success:
-                        false,
-
-                    error:
-                        'Você não está vinculado a esta turma.'
-
-                };
-
-            }
-
-        }
-
-
-        if (
-            role ===
-            'aluno'
-        ) {
-
-            await update(
-                ref(
-                    db,
-                    `usuarios/${userUid}`
-                ),
-                {
-
-                    turmaAtualId:
-                        turmaId,
-
-                    turmaAtualNome:
-                        turma.nome ||
-                        '',
-
-                    turmaAtualCodigo:
-                        turma.codigo ||
-                        '',
-
-                    turmaSelecionadaEm:
-                        Date.now(),
-
-                    [`turmasVinculadas/${turmaId}`]:
-                        true
-
-                }
-            );
-
-
-            const userSnapshot =
-                await get(
-                    ref(
-                        db,
-                        `usuarios/${userUid}`
-                    )
-                );
-
-
-            if (
-                userSnapshot.exists() &&
-                userSnapshot.val().email
-            ) {
-
-                const emailKey =
-                    sanitizeEmail(
-                        userSnapshot
-                            .val()
-                            .email
-                    );
-
-
-                await update(
-                    ref(
-                        db,
-                        `alunos/${emailKey}`
-                    ),
-                    {
-
-                        turmaAtualId:
-                            turmaId,
-
-                        turmaAtualNome:
-                            turma.nome ||
-                            '',
-
-                        turmaAtualCodigo:
-                            turma.codigo ||
-                            '',
-
-                        [`turmasVinculadas/${turmaId}`]:
-                            true
-
-                    }
-                );
-
-            }
-
-        }
-
-
-        localStorage.setItem(
-            'turmaAtualId',
-            turmaId
-        );
-
-
-        localStorage.setItem(
-            'turmaAtualNome',
-            turma.nome ||
-            ''
-        );
-
-
-        localStorage.setItem(
-            'turmaAtualCodigo',
-            turma.codigo ||
-            ''
-        );
-
-
-        userExtraInfo.turmaAtualId =
-            turmaId;
-
-
-        userExtraInfo.turmaAtualNome =
-            turma.nome ||
-            '';
-
-
-        userExtraInfo.turmaAtualCodigo =
-            turma.codigo ||
-            '';
-
-
-        window.senaiTurmaAtualId =
-            String(
-                turmaId
-            );
-
-
-        return {
-
-            success:
-                true,
-
-            turma: {
-
-                id:
-                    turmaId,
-
-                ...turma
-
-            }
-
+        const campos = {
+            turmaAtualId: turma.id, turmaAtualNome: turma.nome || '',
+            turmaAtualCodigo: turma.codigo || '', turmaSelecionadaEm: Date.now()
         };
-
-
+        const caminhos = [`usuarios/${user.uid}`];
+        if (user.email) caminhos.push(`professores/${sanitizeEmail(user.email)}`);
+        const alteracoes = {};
+        for (const caminho of caminhos) {
+            for (const [campo, valor] of Object.entries(campos)) alteracoes[`${caminho}/${campo}`] = valor;
+        }
+        salvando = true;
+        await update(ref(db), alteracoes);
+        if (auth.currentUser?.uid !== user.uid || userRole !== 'professor') {
+            return { success: false, error: 'Sua sessão mudou. Faça login novamente.' };
+        }
+        Object.assign(userExtraInfo, campos);
+        localStorage.setItem('turmaAtual', JSON.stringify(turma));
+        for (const campo of ['turmaAtualId', 'turmaAtualNome', 'turmaAtualCodigo']) {
+            localStorage.setItem(campo, campos[campo]);
+        }
+        window.senaiTurmaAtualId = turma.id;
+        return { success: true, turma };
     } catch (error) {
-
-        console.error(
-            'Erro ao entrar na turma:',
-            error
-        );
-
-
-        return {
-
-            success:
-                false,
-
-            error:
-                error.message
-
-        };
-
+        console.error('Erro ao acessar turma do professor:', error);
+        const permissao = /permission|denied/i.test(String(error.code || ''));
+        return { success: false, error: permissao
+            ? 'Você não tem permissão para concluir esta operação.'
+            : salvando ? 'Não foi possível salvar a turma atual. Tente novamente.'
+                : 'Não foi possível consultar a turma. Verifique sua conexão e tente novamente.' };
     }
+}
 
+async function entrarNaTurma(turmaId, codigoInformado, userUid, role) {
+    if (role === 'aluno') {
+        if (auth.currentUser?.uid !== userUid) {
+            return { success: false, error: 'Sua sessão mudou. Faça login novamente.' };
+        }
+        return entrarAlunoPorCodigo(codigoInformado, turmaId);
+    }
+    if (role !== 'professor' || auth.currentUser?.uid !== userUid) {
+        return { success: false, error: 'Você não possui acesso a esta turma.' };
+    }
+    return acessarTurmaDoProfessor(turmaId);
 }
 
 
@@ -3753,6 +3478,11 @@ async function salvarTurmaAtual(
     userUid,
     turma
 ) {
+
+    if (userRole === 'professor') {
+        if (auth.currentUser?.uid !== userUid) return { success: false, error: 'Sua sessão mudou.' };
+        return acessarTurmaDoProfessor(turma?.id);
+    }
 
     try {
 
@@ -4330,6 +4060,13 @@ function onAuthStateChange(
         auth,
         async user => {
 
+            if (user && cadastroAlunoPendente) {
+                const uidCadastrado = await cadastroAlunoPendente;
+                if (uidCadastrado !== user.uid || auth.currentUser?.uid !== user.uid) {
+                    return;
+                }
+            }
+
             /*
              * NÃO existe logout automático aqui.
              */
@@ -4501,6 +4238,12 @@ export {
     removerTurma,
 
     entrarNaTurma,
+    acessarTurmaDoProfessor,
+    professorPertenceTurma,
+
+    entrarAlunoPorCodigo,
+
+    restaurarTurmaDoAluno,
 
     salvarTurmaAtual,
 

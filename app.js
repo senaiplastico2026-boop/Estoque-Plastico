@@ -13,6 +13,11 @@ import {
     removerTurma,
     onAuthStateChange,
     listarProfessores,
+    criarTurma,
+    entrarAlunoPorCodigo,
+    acessarTurmaDoProfessor,
+    professorPertenceTurma,
+    restaurarTurmaDoAluno,
     userExtraInfo,
     isOnline
 } from './auth.js';
@@ -21,10 +26,7 @@ import { db } from './firebaseConfig.js';
 
 import {
     ref,
-    get,
-    push,
-    set,
-    update
+    get
 } from 'firebase/database';
 
 import {
@@ -77,6 +79,8 @@ let ultimaSessaoPreparada = null;
 let currentTurma = null;
 let turmaSelecionada = null;
 let turmasDisponiveis = [];
+let processandoEntradaAluno = false;
+let processandoEntradaProfessor = false;
 
 let authEstadoInicializado = false;
 let processandoEstadoAuth = false;
@@ -91,9 +95,6 @@ const loginContainer =
 
 const appContainer =
     document.getElementById('appContainer');
-
-const turmaGateHTML =
-    document.getElementById('turmaGate');
 
 const loginProfBtn =
     document.getElementById('doLoginProfBtn');
@@ -416,117 +417,6 @@ document
 
 
 // ============================================================
-// PROFESSORES - CHECKLIST DO ALUNO
-// ============================================================
-
-async function carregarProfessoresChecklist() {
-
-    const container =
-        document.getElementById(
-            'professoresCheckboxes'
-        );
-
-    if (!container) {
-
-        return;
-
-    }
-
-    container.innerHTML = `
-        <div class="checkbox-loading">
-            <i class="fas fa-spinner fa-spin"></i>
-            Carregando professores...
-        </div>
-    `;
-
-    try {
-
-        const professores =
-            await listarProfessores();
-
-        if (!professores?.length) {
-
-            container.innerHTML = `
-                <div class="checkbox-loading">
-                    <i class="fas fa-user-slash"></i>
-                    Nenhum professor cadastrado.
-                </div>
-            `;
-
-            return;
-
-        }
-
-        container.innerHTML =
-            professores.map(prof => {
-
-                const nome =
-                    prof.nome ||
-                    prof.email?.split('@')[0] ||
-                    'Professor';
-
-                const uid =
-                    prof.uid ||
-                    prof.id ||
-                    '';
-
-                const email =
-                    prof.email ||
-                    '';
-
-                return `
-                    <label class="checkbox-item">
-
-                        <input
-                            type="checkbox"
-                            value="${escapeHtml(nome)}"
-                            data-uid="${escapeHtml(uid)}"
-                            data-nome="${escapeHtml(nome)}"
-                            data-email="${escapeHtml(email)}">
-
-                        <span>
-
-                            <strong>
-                                ${escapeHtml(nome)}
-                            </strong>
-
-                            ${
-                                email
-                                    ? `
-                                        <small>
-                                            ${escapeHtml(email)}
-                                        </small>
-                                      `
-                                    : ''
-                            }
-
-                        </span>
-
-                    </label>
-                `;
-
-            }).join('');
-
-    } catch (error) {
-
-        console.error(
-            'Erro ao carregar professores:',
-            error
-        );
-
-        container.innerHTML = `
-            <div class="checkbox-loading">
-                <i class="fas fa-circle-exclamation"></i>
-                Não foi possível carregar os professores.
-            </div>
-        `;
-
-    }
-
-}
-
-
-// ============================================================
 // PROFESSORES - CHECKLIST DA TURMA
 // ============================================================
 
@@ -841,236 +731,104 @@ document
 
 document
     .getElementById('btnAbrirCadastroAluno')
-    ?.addEventListener(
-        'click',
-        async () => {
-
-            if (cadastrarAlunoModal) {
-
-                cadastrarAlunoModal.style.display =
-                    'block';
-
-            }
-
-            await carregarProfessoresChecklist();
-
+    ?.addEventListener('click', () => {
+        if (cadastrarAlunoModal) {
+            cadastrarAlunoModal.style.display = 'block';
+            document.getElementById('novoAlunoNome')?.focus();
         }
-    );
+    });
 
 document
-    .querySelector('.close-cadastrar-aluno')
-    ?.addEventListener(
-        'click',
-        () => {
-
+    .querySelectorAll('.close-cadastrar-aluno')
+    .forEach(button => {
+        button.addEventListener('click', () => {
             if (cadastrarAlunoModal) {
-
-                cadastrarAlunoModal.style.display =
-                    'none';
-
+                cadastrarAlunoModal.style.display = 'none';
             }
-
-        }
-    );
+        });
+    });
 
 document
     .getElementById('btnCadastrarNovoAluno')
-    ?.addEventListener(
-        'click',
-        async () => {
+    ?.addEventListener('click', async () => {
+        const nome = document.getElementById('novoAlunoNome')?.value.trim() || '';
+        const email = document.getElementById('novoAlunoEmail')?.value.trim() || '';
+        const senha = document.getElementById('novoAlunoSenha')?.value || '';
+        const confirmarSenha = document.getElementById('novoAlunoConfirmarSenha')?.value || '';
+        const turno = document.getElementById('novoAlunoTurno')?.value || '';
+        const btn = document.getElementById('btnCadastrarNovoAluno');
 
-            const email =
-                document
-                    .getElementById(
-                        'novoAlunoEmail'
-                    )
-                    ?.value
-                    .trim();
-
-            const senha =
-                document
-                    .getElementById(
-                        'novoAlunoSenha'
-                    )
-                    ?.value
-                    .trim();
-
-            const turno =
-                document
-                    .getElementById(
-                        'novoAlunoTurno'
-                    )
-                    ?.value ||
-                'Manhã';
-
-            const selecionados =
-                Array.from(
-                    document.querySelectorAll(
-                        '#professoresCheckboxes input[type="checkbox"]:checked'
-                    )
-                );
-
-            const professores =
-                selecionados.map(
-                    input => ({
-
-                        uid:
-                            input.dataset.uid ||
-                            '',
-
-                        nome:
-                            input.dataset.nome ||
-                            input.value ||
-                            'Professor',
-
-                        email:
-                            input.dataset.email ||
-                            ''
-
-                    })
-                );
-
-            const btn =
-                document.getElementById(
-                    'btnCadastrarNovoAluno'
-                );
-
-            if (!email || !senha) {
-
-                alert(
-                    '⚠️ Preencha email e senha!'
-                );
-
-                return;
-
-            }
-
-            if (senha.length < 6) {
-
-                alert(
-                    '⚠️ A senha deve ter pelo menos 6 caracteres!'
-                );
-
-                return;
-
-            }
-
-            if (!professores.length) {
-
-                alert(
-                    '⚠️ Selecione pelo menos um professor!'
-                );
-
-                return;
-
-            }
-
-            try {
-
-                if (btn) {
-
-                    btn.disabled =
-                        true;
-
-                    btn.innerHTML =
-                        '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
-
-                }
-
-                const result =
-                    await cadastrarAluno(
-                        email,
-                        senha,
-                        turno,
-                        professores
-                    );
-
-                if (!result?.success) {
-
-                    alert(
-                        '❌ ' +
-                        (
-                            result?.error ||
-                            'Erro ao cadastrar aluno.'
-                        )
-                    );
-
-                    return;
-
-                }
-
-                alert(
-                    `✅ Aluno "${email}" cadastrado com sucesso!`
-                );
-
-                if (cadastrarAlunoModal) {
-
-                    cadastrarAlunoModal.style.display =
-                        'none';
-
-                }
-
-                const novoEmail =
-                    document.getElementById(
-                        'novoAlunoEmail'
-                    );
-
-                const novaSenha =
-                    document.getElementById(
-                        'novoAlunoSenha'
-                    );
-
-                const loginEmail =
-                    document.getElementById(
-                        'loginAlunoEmail'
-                    );
-
-                if (novoEmail) {
-
-                    novoEmail.value = '';
-
-                }
-
-                if (novaSenha) {
-
-                    novaSenha.value = '';
-
-                }
-
-                if (loginEmail) {
-
-                    loginEmail.value = email;
-
-                }
-
-            } catch (error) {
-
-                console.error(
-                    'Erro cadastro aluno:',
-                    error
-                );
-
-                alert(
-                    '❌ Erro cadastro aluno:\n' +
-                    error.message
-                );
-
-            } finally {
-
-                if (btn) {
-
-                    btn.disabled =
-                        false;
-
-                    btn.innerHTML =
-                        '<i class="fas fa-user-plus"></i> Cadastrar';
-
-                }
-
-            }
-
+        if (btn?.disabled) {
+            return;
         }
-    );
+
+        if (!nome || !email || !senha.trim() || !confirmarSenha.trim()) {
+            alert('⚠️ Preencha nome, e-mail, senha e confirmação de senha!');
+            return;
+        }
+
+        if (senha !== confirmarSenha) {
+            alert('⚠️ As senhas não são iguais!');
+            return;
+        }
+
+        // Mantém a normalização de senha utilizada pelo cadastro e login atuais.
+        if (senha.trim().length < 6) {
+            alert('⚠️ A senha deve ter pelo menos 6 caracteres!');
+            return;
+        }
+
+        if (!['Manhã', 'Tarde', 'Noite'].includes(turno)) {
+            alert('⚠️ Selecione um turno válido!');
+            return;
+        }
+
+        try {
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+            }
+
+            const result = await cadastrarAluno({
+                nome,
+                email,
+                senha: senha.trim(),
+                turno
+            });
+
+            if (!result?.success) {
+                alert(result?.error || '❌ Erro ao cadastrar aluno.');
+                return;
+            }
+
+            alert(`✅ Aluno "${nome}" cadastrado com sucesso!`);
+
+            if (cadastrarAlunoModal) {
+                cadastrarAlunoModal.style.display = 'none';
+            }
+
+            ['novoAlunoNome', 'novoAlunoEmail', 'novoAlunoSenha', 'novoAlunoConfirmarSenha']
+                .forEach(id => {
+                    const input = document.getElementById(id);
+                    if (input) {
+                        input.value = '';
+                    }
+                });
+
+            const loginEmail = document.getElementById('loginAlunoEmail');
+            if (loginEmail) {
+                loginEmail.value = email;
+            }
+        } catch (error) {
+            console.error('Erro cadastro aluno:', error);
+            alert('❌ Erro cadastro aluno:\n' + error.message);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-user-plus"></i> Cadastrar';
+            }
+        }
+    });
 
 
 // ============================================================
@@ -1357,242 +1115,21 @@ function obterProfessoresTurma(turma) {
 // PROFESSOR PERTENCE À TURMA
 // ============================================================
 
-function professorPertenceTurma(
-    turma,
-    professor
-) {
-
-    if (
-        !turma ||
-        !professor
-    ) {
-
-        return false;
-
-    }
-
-    const nomeProfessor =
-        normalizarTexto(
-            userExtraInfo?.nome
-        );
-
-    const emailProfessor =
-        normalizarTexto(
-            professor.email
-        );
-
-    const uidProfessor =
-        String(
-            professor.uid || ''
-        );
-
-    const vinculada =
-        obterProfessoresTurma(
-            turma
-        )
-            .some(
-                item => {
-
-                    if (
-                        typeof item ===
-                        'string'
-                    ) {
-
-                        return (
-                            normalizarTexto(
-                                item
-                            ) ===
-                            nomeProfessor
-                        );
-
-                    }
-
-                    return Boolean(
-
-                        (
-                            item?.uid &&
-                            String(
-                                item.uid
-                            ) ===
-                            uidProfessor
-                        ) ||
-
-                        (
-                            item?.email &&
-                            normalizarTexto(
-                                item.email
-                            ) ===
-                            emailProfessor
-                        ) ||
-
-                        (
-                            item?.nome &&
-                            normalizarTexto(
-                                item.nome
-                            ) ===
-                            nomeProfessor
-                        )
-
-                    );
-
-                }
-            );
-
-    const criador =
-
-        (
-            turma.criadoPorUid &&
-            String(
-                turma.criadoPorUid
-            ) ===
-            uidProfessor
-        ) ||
-
-        (
-            turma.criadoPorEmail &&
-            normalizarTexto(
-                turma.criadoPorEmail
-            ) ===
-            emailProfessor
-        ) ||
-
-        (
-            turma.criadoPorNome &&
-            normalizarTexto(
-                turma.criadoPorNome
-            ) ===
-            nomeProfessor
-        );
-
-    return (
-        vinculada ||
-        criador
-    );
-
-}
-
-
-// ============================================================
-// ALUNO PODE VER TURMA
-// ============================================================
-
-function alunoPodeVerTurma(
-    turma
-) {
-
-    if (!turma) {
-
-        return false;
-
-    }
-
-    const professoresAluno =
-        Array.isArray(
-            userExtraInfo?.professoresVinculados
-        )
-            ? userExtraInfo.professoresVinculados
-            : [];
-
-    if (
-        !professoresAluno.length
-    ) {
-
-        return false;
-
-    }
-
-    const professoresTurma =
-        obterProfessoresTurma(
-            turma
-        );
-
-    return professoresTurma.some(
-        professorTurma => {
-
-            const nomeTurma =
-                typeof professorTurma === 'string'
-                    ? professorTurma
-                    : professorTurma?.nome ||
-                      professorTurma?.email ||
-                      '';
-
-            return professoresAluno.some(
-                professorAluno => {
-
-                    const nomeAluno =
-                        typeof professorAluno === 'string'
-                            ? professorAluno
-                            : professorAluno?.nome ||
-                              professorAluno?.email ||
-                              '';
-
-                    return (
-                        normalizarTexto(
-                            nomeAluno
-                        ) ===
-                        normalizarTexto(
-                            nomeTurma
-                        )
-                    );
-
-                }
-            );
-
-        }
-    );
-
-}
-
-
 // ============================================================
 // CARREGAR TURMAS DISPONÍVEIS
 // ============================================================
 
 async function carregarTurmasDisponiveis() {
-
-    const todas =
-        await buscarTodasTurmas();
-
-    if (
-        currentUserRole ===
-        'professor'
-    ) {
-
-        turmasDisponiveis =
-            todas.filter(
-                turma =>
-                    professorPertenceTurma(
-                        turma,
-                        currentUser
-                    )
-            );
-
-    } else {
-
-        turmasDisponiveis =
-            todas.filter(
-                turma =>
-                    alunoPodeVerTurma(
-                        turma
-                    )
-            );
-
+    // Listagem disponível exclusivamente para o fluxo existente do professor.
+    if (currentUserRole !== 'professor') {
+        turmasDisponiveis = [];
+        return turmasDisponiveis;
     }
-
-    turmasDisponiveis.sort(
-        (a, b) =>
-            normalizarTexto(
-                a.nome
-            )
-                .localeCompare(
-                    normalizarTexto(
-                        b.nome
-                    )
-                )
-    );
-
+    const todas = await buscarTodasTurmas();
+    if (currentUserRole !== 'professor') return [];
+    turmasDisponiveis = todas.filter(turma => professorPertenceTurma(turma, currentUser));
+    turmasDisponiveis.sort((a, b) => normalizarTexto(a.nome).localeCompare(normalizarTexto(b.nome)));
     return turmasDisponiveis;
-
 }
 
 
@@ -1645,171 +1182,28 @@ function filtrarTurmas(
 // GARANTIR GATE DE TURMA
 // ============================================================
 
-function garantirTurmaGate() {
-
-    let gate =
-        document.getElementById(
-            'turmaGate'
-        );
-
-    if (gate) {
-
-        return gate;
-
+function garantirTurmaGate(role = currentUserRole) {
+    if (currentUserRole === 'professor') return null;
+    const perfil = 'aluno';
+    let gate = document.getElementById('turmaGate');
+    if (!gate) {
+        gate = document.createElement('div');
+        gate.id = 'turmaGate';
+        gate.className = 'turma-gate';
+        gate.style.display = 'none';
+        document.body.appendChild(gate);
     }
-
-    gate =
-        document.createElement(
-            'div'
+    if (gate.dataset.perfil !== perfil || !gate.querySelector('#btnEntrarTurma')) {
+        const template = document.getElementById(
+            'turmaGateAlunoTemplate'
         );
-
-    gate.id =
-        'turmaGate';
-
-    gate.className =
-        'turma-gate';
-
-    gate.style.display =
-        'none';
-
-    gate.innerHTML = `
-
-        <div class="turma-gate-card">
-
-            <div class="turma-gate-header">
-
-                <div class="turma-gate-icon">
-
-                    <i class="fas fa-users"></i>
-
-                </div>
-
-                <div>
-
-                    <span>
-                        ACESSO À TURMA
-                    </span>
-
-                    <h2 id="turmaGateTitle">
-                        Selecione sua turma
-                    </h2>
-
-                    <p id="turmaGateSubtitle"></p>
-
-                </div>
-
-            </div>
-
-            <div class="turma-search">
-
-                <i class="fas fa-search"></i>
-
-                <input
-                    type="search"
-                    id="filtroTurma"
-                    placeholder="Pesquisar turma ou código...">
-
-            </div>
-
-            <div
-                id="turmasLista"
-                class="turmas-lista">
-            </div>
-
-            <div class="turma-selecionada">
-
-                <div>
-
-                    <small>
-                        TURMA SELECIONADA
-                    </small>
-
-                    <strong id="turmaSelecionadaNome">
-                        Nenhuma turma selecionada
-                    </strong>
-
-                    <span id="turmaSelecionadaDetalhes">
-                        Selecione uma turma acima.
-                    </span>
-
-                </div>
-
-                <div class="turma-codigo-visual">
-
-                    <span>
-                        CÓDIGO
-                    </span>
-
-                    <strong id="codigoTurmaVisual">
-                        --------
-                    </strong>
-
-                </div>
-
-            </div>
-
-            <div class="turma-code-input">
-
-                <label>
-
-                    <i class="fas fa-key"></i>
-
-                    Digite o código da turma
-
-                </label>
-
-                <input
-                    type="text"
-                    id="codigoTurmaEntrada"
-                    placeholder="Digite o código mostrado acima"
-                    autocomplete="off"
-                    maxlength="30">
-
-            </div>
-
-            <button
-                type="button"
-                id="btnEntrarTurma"
-                class="btn-turma-entrar">
-
-                <i class="fas fa-right-to-bracket"></i>
-
-                Entrar na turma
-
-            </button>
-
-            <button
-                type="button"
-                id="btnAbrirCriarTurma"
-                class="btn-turma-criar">
-
-                <i class="fas fa-plus"></i>
-
-                Criar nova turma
-
-            </button>
-
-            <button
-                type="button"
-                id="btnVoltarTurma"
-                class="btn-turma-voltar">
-
-                <i class="fas fa-arrow-left"></i>
-
-                Voltar
-
-            </button>
-
-        </div>
-
-    `;
-
-    document.body.appendChild(
-        gate
-    );
-
+        if (!template) {
+            throw new Error('A estrutura da tela de acesso à turma não foi encontrada.');
+        }
+        gate.replaceChildren(template.content.cloneNode(true));
+        gate.dataset.perfil = perfil;
+    }
     return gate;
-
 }
 
 
@@ -1821,148 +1215,28 @@ function mostrarGate(
     role
 ) {
 
-    const gate =
-        garantirTurmaGate();
-
-    const titulo =
-        document.getElementById(
-            'turmaGateTitle'
-        );
-
-    const subtitulo =
-        document.getElementById(
-            'turmaGateSubtitle'
-        );
-
-    const criarBtn =
-        document.getElementById(
-            'btnAbrirCriarTurma'
-        );
-
-    const filtro =
-        document.getElementById(
-            'filtroTurma'
-        );
-
-    const codigoInput =
-        document.getElementById(
-            'codigoTurmaEntrada'
-        );
-
-    const nome =
-        document.getElementById(
-            'turmaSelecionadaNome'
-        );
-
-    const codigo =
-        document.getElementById(
-            'codigoTurmaVisual'
-        );
-
-    const detalhes =
-        document.getElementById(
-            'turmaSelecionadaDetalhes'
-        );
-
-    turmaSelecionada =
-        null;
-
-    if (titulo) {
-
-        titulo.textContent =
-            'Selecione sua turma';
-
+    if (currentUserRole === 'professor') {
+        mostrarApp();
+        const gate = document.getElementById('turmaGate');
+        if (gate) gate.style.display = 'none';
+        window.showTab('turmas');
+        return;
     }
+    const gate = garantirTurmaGate(role);
 
-    if (subtitulo) {
-
-        subtitulo.textContent =
-            role === 'professor'
-                ? 'Selecione uma turma vinculada ao seu perfil e confirme o código.'
-                : 'Escolha uma turma relacionada aos professores da sua conta e confirme o código.';
-
+    if (gate.dataset.perfil === 'aluno') {
+        turmaSelecionada = null;
+        turmasDisponiveis = [];
+        const input = document.getElementById('codigoTurmaEntrada');
+        if (input) input.value = '';
+        document.getElementById('turmaAlunoMensagem').textContent = '';
+        if (appContainer) appContainer.style.display = 'none';
+        if (loginContainer) loginContainer.style.display = 'none';
+        gate.style.display = 'flex';
+        closeSidebar();
+        input?.focus();
+        return;
     }
-
-    if (criarBtn) {
-
-        criarBtn.style.display =
-            role === 'professor'
-                ? 'flex'
-                : 'none';
-
-    }
-
-    if (filtro) {
-
-        filtro.value = '';
-
-    }
-
-    if (codigoInput) {
-
-        codigoInput.value = '';
-
-    }
-
-    if (nome) {
-
-        nome.textContent =
-            'Nenhuma turma selecionada';
-
-    }
-
-    if (codigo) {
-
-        codigo.textContent =
-            '--------';
-
-    }
-
-    if (detalhes) {
-
-        detalhes.textContent =
-            'Selecione uma turma acima.';
-
-    }
-
-    carregarTurmasDisponiveis()
-        .then(
-            () =>
-                renderListaTurmasGate()
-        )
-        .catch(
-            error => {
-
-                console.error(
-                    'Erro carregando turmas:',
-                    error
-                );
-
-                renderListaTurmasGate(
-                    []
-                );
-
-            }
-        );
-
-    if (appContainer) {
-
-        appContainer.style.display =
-            'none';
-
-    }
-
-    if (loginContainer) {
-
-        loginContainer.style.display =
-            'none';
-
-    }
-
-    gate.style.display =
-        'flex';
-
-    closeSidebar();
 
 }
 
@@ -1971,83 +1245,8 @@ function mostrarGate(
 // SELECIONAR TURMA
 // ============================================================
 
-function selecionarTurma(
-    turma
-) {
-
-    if (!turma) {
-
-        return;
-
-    }
-
-    turmaSelecionada = {
-        ...turma
-    };
-
-    const nome =
-        document.getElementById(
-            'turmaSelecionadaNome'
-        );
-
-    const codigo =
-        document.getElementById(
-            'codigoTurmaVisual'
-        );
-
-    const detalhes =
-        document.getElementById(
-            'turmaSelecionadaDetalhes'
-        );
-
-    const input =
-        document.getElementById(
-            'codigoTurmaEntrada'
-        );
-
-    if (nome) {
-
-        nome.textContent =
-            turma.nome ||
-            'Turma';
-
-    }
-
-    if (codigo) {
-
-        codigo.textContent =
-            turma.codigo ||
-            '--------';
-
-    }
-
-    if (detalhes) {
-
-        detalhes.textContent =
-            `Turma criada por ${turma.criadoPorNome || turma.criadoPorEmail || 'Professor'} em ${turma.criadoEm || 'data não informada'}`;
-
-    }
-
-    if (input) {
-
-        input.value = '';
-
-        input.focus();
-
-    }
-
-    const filtro =
-        document.getElementById(
-            'filtroTurma'
-        );
-
-    renderListaTurmasGate(
-        filtrarTurmas(
-            turmasDisponiveis,
-            filtro?.value || ''
-        )
-    );
-
+function selecionarTurma(turma) {
+    if (currentUserRole === 'professor' && turma?.id) return abrirTurmaDoProfessor(turma.id);
 }
 
 
@@ -2058,6 +1257,7 @@ function selecionarTurma(
 function renderListaTurmasGate(
     lista = turmasDisponiveis
 ) {
+    if (currentUserRole !== 'professor') return;
 
     const container =
         document.getElementById(
@@ -2089,12 +1289,7 @@ function renderListaTurmasGate(
                 <span>
 
                     ${
-                        currentUserRole ===
-                        'professor'
-
-                            ? 'Você ainda não está vinculado a nenhuma turma.'
-
-                            : 'Nenhuma turma foi encontrada para os professores vinculados à sua conta.'
+                        'Você ainda não está vinculado a nenhuma turma.'
                     }
 
                 </span>
@@ -2241,101 +1436,120 @@ document.addEventListener(
 
 
 // ============================================================
+// ENTRADA E RESTAURAÇÃO DO ALUNO
+// ============================================================
+
+function atualizarProcessamentoAluno(processando, texto = 'Entrando...') {
+    const gate = document.getElementById('turmaGate');
+    if (gate?.dataset.perfil !== 'aluno') return;
+    const button = document.getElementById('btnEntrarTurma');
+    const input = document.getElementById('codigoTurmaEntrada');
+    if (button) {
+        button.disabled = processando;
+        button.innerHTML = processando
+            ? `<i class="fas fa-spinner fa-spin"></i> ${texto}`
+            : '<i class="fas fa-right-to-bracket"></i> Entrar na turma';
+    }
+    if (input) input.disabled = processando;
+}
+
+async function abrirTurmaDoAluno(turma) {
+    definirTurmaAtual(turma);
+    // Os perfis e userExtraInfo já foram atualizados após a confirmação do Firebase.
+    await abrirSistemaNaTurma();
+    if (currentUserRole === 'aluno') window.showTab('dashboard');
+}
+
+async function confirmarEntradaAlunoPorCodigo() {
+    if (processandoEntradaAluno || currentUserRole !== 'aluno' || !currentUser) return;
+    const userUid = currentUser.uid;
+    const input = document.getElementById('codigoTurmaEntrada');
+    const codigo = String(input?.value ?? '').trim().toUpperCase();
+    const mensagem = document.getElementById('turmaAlunoMensagem');
+    if (!codigo) {
+        if (mensagem) mensagem.textContent = 'Digite o código fornecido pelo seu professor.';
+        input?.focus();
+        return;
+    }
+    processandoEntradaAluno = true;
+    atualizarProcessamentoAluno(true);
+    if (mensagem) mensagem.textContent = '';
+    try {
+        const result = await entrarAlunoPorCodigo(codigo);
+        if (currentUser?.uid !== userUid || currentUserRole !== 'aluno') return;
+        if (!result.success) {
+            if (mensagem) mensagem.textContent = result.error;
+            return;
+        }
+        await abrirTurmaDoAluno(result.turma);
+    } catch (error) {
+        console.error('Erro ao abrir turma do aluno:', error);
+        if (currentUser?.uid === userUid && mensagem) {
+            mensagem.textContent = 'Não foi possível concluir a entrada. Tente novamente.';
+        }
+    } finally {
+        processandoEntradaAluno = false;
+        atualizarProcessamentoAluno(false);
+    }
+}
+
+async function prepararTurmaDoAluno(user) {
+    // Cache local não comprova matrícula. A restauração consulta os dois perfis e a turma.
+    definirTurmaAtual(null);
+    userExtraInfo.turmaAtualId = null;
+    userExtraInfo.turmaAtualNome = '';
+    userExtraInfo.turmaAtualCodigo = '';
+    mostrarGate('aluno');
+    processandoEntradaAluno = true;
+    atualizarProcessamentoAluno(true, 'Verificando vínculo...');
+    try {
+        const result = await restaurarTurmaDoAluno();
+        if (currentUser?.uid !== user.uid || currentUserRole !== 'aluno') return;
+        if (!result.success) {
+            document.getElementById('turmaAlunoMensagem').textContent = result.error;
+            return;
+        }
+        if (result.turma) await abrirTurmaDoAluno(result.turma);
+    } finally {
+        processandoEntradaAluno = false;
+        atualizarProcessamentoAluno(false);
+    }
+}
+
+
+// ============================================================
 // ENTRAR NA TURMA
 // ============================================================
 
-async function confirmarEntradaNaTurma() {
-
-    if (!currentUser) {
-
-        mostrarSomenteLogin();
-
-        return;
-
-    }
-
-    if (!turmaSelecionada) {
-
-        alert(
-            '⚠️ Selecione uma turma primeiro.'
-        );
-
-        return;
-
-    }
-
-    const input =
-        document.getElementById(
-            'codigoTurmaEntrada'
-        );
-
-    const digitado =
-        input?.value.trim() ||
-        '';
-
-    if (!digitado) {
-
-        alert(
-            '⚠️ Digite o código da turma.'
-        );
-
-        input?.focus();
-
-        return;
-
-    }
-
-    if (
-        normalizarTexto(
-            digitado
-        ) !==
-        normalizarTexto(
-            turmaSelecionada.codigo
-        )
-    ) {
-
-        alert(
-            '❌ Código da turma incorreto.'
-        );
-
-        input?.select();
-
-        return;
-
-    }
-
+async function abrirTurmaDoProfessor(turmaId) {
+    if (processandoEntradaProfessor || !currentUser || currentUserRole !== 'professor') return;
+    const uid = currentUser.uid;
+    processandoEntradaProfessor = true;
+    const botoes = document.querySelectorAll('.turma-entrar-page');
+    botoes.forEach(btn => { btn.disabled = true; });
     try {
-
-        /*
-         * IMPORTANTE:
-         *
-         * O aluno NÃO altera mais a lista de professores
-         * da turma.
-         *
-         * A lista de professores pertence à turma e deve
-         * continuar exatamente como foi cadastrada.
-         */
-
-        definirTurmaAtual(
-            turmaSelecionada
-        );
-
+        const resultado = await acessarTurmaDoProfessor(turmaId);
+        if (currentUser?.uid !== uid || currentUserRole !== 'professor') return;
+        if (!resultado.success) { alert(resultado.error); return; }
+        definirTurmaAtual(resultado.turma);
+        for (const id of ['tabDashboard', 'tabMateriais', 'tabMoinho', 'tabHistorico', 'tabPerfil']) {
+            document.getElementById(id)?.replaceChildren();
+        }
         await abrirSistemaNaTurma();
-
+        if (currentUser?.uid === uid && currentUserRole === 'professor') window.showTab('dashboard', true);
     } catch (error) {
-
-        console.error(
-            'Erro ao entrar na turma:',
-            error
-        );
-
-        alert(
-            '❌ Não foi possível entrar na turma:\n' +
-            error.message
-        );
-
+        console.error('Erro ao abrir turma do professor:', error);
+        alert('Não foi possível abrir a turma. Tente novamente.');
+    } finally {
+        processandoEntradaProfessor = false;
+        botoes.forEach(btn => { btn.disabled = false; });
     }
+}
 
+async function confirmarEntradaNaTurma() {
+    if (!currentUser) return mostrarSomenteLogin();
+    if (currentUserRole === 'aluno') return confirmarEntradaAlunoPorCodigo();
+    if (currentUserRole === 'professor' && turmaSelecionada?.id) return abrirTurmaDoProfessor(turmaSelecionada.id);
 }
 
 
@@ -2449,6 +1663,7 @@ async function abrirSistemaNaTurma() {
 // ============================================================
 
 function atualizarTurmaInterface() {
+    fecharModalCodigoTurma();
 
     const nome =
         document.getElementById(
@@ -2470,13 +1685,79 @@ function atualizarTurmaInterface() {
 
     if (codigo) {
 
-        codigo.textContent =
-            currentTurma?.codigo ||
-            '------';
+        const valor = String(currentTurma?.codigo ?? '');
+        codigo.textContent = valor || '------';
+        if (currentUserRole === 'professor' && valor) {
+            const botao = document.createElement('button');
+            botao.type = 'button';
+            botao.className = 'codigo-turma-botao';
+            botao.dataset.codigoTurma = 'atual';
+            botao.setAttribute('aria-haspopup', 'dialog');
+            botao.setAttribute('aria-controls', 'modalCodigoTurma');
+            botao.setAttribute('aria-label', 'Exibir código da turma: ' + valor);
+            botao.textContent = valor;
+            codigo.replaceChildren(botao);
+        }
 
     }
 
 }
+
+
+// Visualização apenas: não seleciona turma nem consulta/persiste dados.
+let origemModalCodigoTurma = null;
+
+function abrirModalCodigoTurma(codigo, nomeTurma = '', origem = document.activeElement) {
+    if (!currentUser || currentUserRole !== 'professor') return;
+    const valor = String(codigo ?? '');
+    if (!valor.trim()) return;
+    const modal = document.getElementById('modalCodigoTurma');
+    if (!modal) return;
+    document.getElementById('modalCodigoTurmaValor').textContent = valor;
+    const nome = document.getElementById('modalCodigoTurmaNome');
+    nome.textContent = String(nomeTurma ?? '');
+    nome.hidden = !nome.textContent;
+    if (!modal.open) {
+        origemModalCodigoTurma = origem;
+        modal.showModal();
+    }
+    document.body.classList.add('codigo-turma-modal-aberto');
+    document.getElementById('fecharModalCodigoTurma').focus();
+}
+
+function fecharModalCodigoTurma() {
+    const modal = document.getElementById('modalCodigoTurma');
+    if (modal?.open) modal.close();
+}
+
+function tratarCliqueCodigoTurma(event) {
+    const botao = event.target.closest('.codigo-turma-botao');
+    if (!botao || !currentUser || currentUserRole !== 'professor') return;
+    // Cabeçalho/perfil leem o contexto atual no clique; cards usam seu próprio objeto.
+    const turma = botao.dataset.codigoTurma === 'card'
+        ? turmasDisponiveis.find(item => String(item.id) === botao.dataset.turmaId)
+        : currentTurma;
+    if (!turma) return;
+    abrirModalCodigoTurma(turma.codigo, turma.nome, botao);
+}
+
+// Registrados uma vez, fora da abertura e das renderizações.
+document.addEventListener('click', tratarCliqueCodigoTurma);
+document.getElementById('fecharModalCodigoTurma')?.addEventListener('click', fecharModalCodigoTurma);
+document.getElementById('modalCodigoTurma')?.addEventListener('click', event => {
+    if (event.target !== event.currentTarget) return;
+    const caixa = event.currentTarget.getBoundingClientRect();
+    if (event.clientX < caixa.left || event.clientX > caixa.right ||
+        event.clientY < caixa.top || event.clientY > caixa.bottom) fecharModalCodigoTurma();
+});
+document.getElementById('modalCodigoTurma')?.addEventListener('close', event => {
+    if (event.currentTarget.open) return;
+    document.body.classList.remove('codigo-turma-modal-aberto');
+    document.getElementById('modalCodigoTurmaValor').textContent = '';
+    document.getElementById('modalCodigoTurmaNome').textContent = '';
+    if (origemModalCodigoTurma?.isConnected) origemModalCodigoTurma.focus();
+    origemModalCodigoTurma = null;
+});
 
 
 // ============================================================
@@ -2488,10 +1769,6 @@ function limparFormularioCriarTurma() {
     const campos = [
 
         'novaTurmaNome',
-
-        'novaTurmaCodigo',
-
-        'novaTurmaCodigoConfirmar',
 
         'novaTurmaDescricao'
 
@@ -2568,7 +1845,11 @@ function limparFormularioCriarTurma() {
 // ABRIR CRIAR TURMA
 // ============================================================
 
+let criandoTurma = false;
+
 async function abrirCriarTurmaModal() {
+
+    if (criandoTurma) return;
 
     if (!currentUser) {
 
@@ -2662,468 +1943,52 @@ document
 // CRIAR TURMA
 // ============================================================
 
-document
-    .getElementById(
-        'btnSalvarNovaTurma'
-    )
-    ?.addEventListener(
-        'click',
-        async () => {
-
-            if (
-                !currentUser ||
-                currentUserRole !==
-                'professor'
-            ) {
-
-                alert(
-                    '⚠️ Somente professores podem criar turmas.'
-                );
-
-                return;
-
-            }
-
-            const nome =
-                document
-                    .getElementById(
-                        'novaTurmaNome'
-                    )
-                    ?.value
-                    .trim() ||
-                '';
-
-            const codigo =
-                document
-                    .getElementById(
-                        'novaTurmaCodigo'
-                    )
-                    ?.value
-                    .trim() ||
-                '';
-
-            const confirmar =
-                document
-                    .getElementById(
-                        'novaTurmaCodigoConfirmar'
-                    )
-                    ?.value
-                    .trim() ||
-                '';
-
-            const descricao =
-                document
-                    .getElementById(
-                        'novaTurmaDescricao'
-                    )
-                    ?.value
-                    .trim() ||
-                '';
-
-            const selecionados =
-                Array.from(
-                    document.querySelectorAll(
-                        '#turmaProfessoresCheckboxes .turma-professor-check:checked'
-                    )
-                );
-
-            const professoresSelecionados =
-                selecionados.map(
-                    checkbox => ({
-
-                        uid:
-                            checkbox.dataset.uid ||
-                            '',
-
-                        nome:
-                            checkbox.dataset.nome ||
-                            checkbox.value ||
-                            'Professor',
-
-                        email:
-                            checkbox.dataset.email ||
-                            ''
-
-                    })
-                );
-
-            const btn =
-                document.getElementById(
-                    'btnSalvarNovaTurma'
-                );
-
-            if (!nome) {
-
-                alert(
-                    '⚠️ Informe o nome da turma.'
-                );
-
-                return;
-
-            }
-
-            if (!codigo) {
-
-                alert(
-                    '⚠️ Informe o código da turma.'
-                );
-
-                return;
-
-            }
-
-            if (
-                codigo.length <
-                3
-            ) {
-
-                alert(
-                    '⚠️ O código precisa ter pelo menos 3 caracteres.'
-                );
-
-                return;
-
-            }
-
-            if (
-                codigo !==
-                confirmar
-            ) {
-
-                alert(
-                    '❌ Os códigos não são iguais.'
-                );
-
-                return;
-
-            }
-
-            if (
-                !professoresSelecionados.length
-            ) {
-
-                alert(
-                    '⚠️ Selecione pelo menos um professor para a turma.'
-                );
-
-                return;
-
-            }
-
-            try {
-
-                if (btn) {
-
-                    btn.disabled =
-                        true;
-
-                    btn.innerHTML =
-                        '<i class="fas fa-spinner fa-spin"></i> Criando...';
-
-                }
-
-                const turmas =
-                    await buscarTodasTurmas();
-
-                const codigoNormalizado =
-                    codigo.toUpperCase();
-
-                const existe =
-                    turmas.some(
-                        turma =>
-                            normalizarTexto(
-                                turma.codigo
-                            ) ===
-                            normalizarTexto(
-                                codigoNormalizado
-                            )
-                    );
-
-                if (existe) {
-
-                    alert(
-                        '❌ Já existe uma turma com esse código.'
-                    );
-
-                    return;
-
-                }
-
-                const novaRef =
-                    push(
-                        ref(
-                            db,
-                            'turmas'
-                        )
-                    );
-
-                const turmaId =
-                    novaRef.key;
-
-                const professoresDaTurma =
-                    {};
-
-                professoresSelecionados.forEach(
-                    professor => {
-
-                        if (
-                            !professor.uid
-                        ) {
-
-                            return;
-
-                        }
-
-                        professoresDaTurma[
-                            professor.uid
-                        ] = {
-
-                            uid:
-                                professor.uid,
-
-                            nome:
-                                professor.nome,
-
-                            email:
-                                professor.email,
-
-                            tipo:
-                                professor.uid ===
-                                currentUser.uid
-                                    ? 'criador'
-                                    : 'vinculado',
-
-                            vinculadoEm:
-                                Date.now()
-
-                        };
-
-                    }
-                );
-
-                if (
-                    currentUser?.uid &&
-                    !professoresDaTurma[
-                        currentUser.uid
-                    ]
-                ) {
-
-                    professoresDaTurma[
-                        currentUser.uid
-                    ] = {
-
-                        uid:
-                            currentUser.uid,
-
-                        nome:
-                            obterNomeUsuario(),
-
-                        email:
-                            currentUser.email ||
-                            '',
-
-                        tipo:
-                            'criador',
-
-                        vinculadoEm:
-                            Date.now()
-
-                    };
-
-                }
-
-                const novaTurma = {
-
-                    id:
-                        turmaId,
-
-                    nome:
-                        nome,
-
-                    codigo:
-                        codigoNormalizado,
-
-                    descricao:
-                        descricao,
-
-                    criadoEm:
-                        new Date()
-                            .toLocaleString(
-                                'pt-BR'
-                            ),
-
-                    criadoPorUid:
-                        currentUser.uid,
-
-                    criadoPorNome:
-                        obterNomeUsuario(),
-
-                    criadoPorEmail:
-                        currentUser.email ||
-                        '',
-
-                    ativo:
-                        true,
-
-                    professores:
-                        professoresDaTurma,
-
-                    alunos:
-                        {},
-
-                    materiais:
-                        {},
-
-                    lixeira_materiais:
-                        {},
-
-                    moinho: {
-
-                        materiais:
-                            [],
-
-                        capacidadeMax:
-                            900,
-
-                        historico:
-                            []
-
-                    },
-
-                    historico:
-                        {}
-
-                };
-
-                await set(
-                    novaRef,
-                    novaTurma
-                );
-
-                for (
-                    const professor
-                    of professoresSelecionados
-                ) {
-
-                    if (
-                        !professor.uid
-                    ) {
-
-                        continue;
-
-                    }
-
-                    await update(
-                        ref(
-                            db,
-                            `usuarios/${professor.uid}`
-                        ),
-                        {
-
-                            [`turmasVinculadas/${turmaId}`]:
-                                true
-
-                        }
-                    );
-
-                    if (
-                        professor.email
-                    ) {
-
-                        await update(
-                            ref(
-                                db,
-                                `professores/${professor.email.replace(
-                                    /[.#$[\]]/g,
-                                    '_'
-                                )}`
-                            ),
-                            {
-
-                                [`turmasVinculadas/${turmaId}`]:
-                                    true
-
-                            }
-                        );
-
-                    }
-
-                }
-
-                await update(
-                    ref(
-                        db,
-                        `usuarios/${currentUser.uid}`
-                    ),
-                    {
-
-                        turmaAtualId:
-                            turmaId,
-
-                        turmaAtualNome:
-                            novaTurma.nome,
-
-                        turmaAtualCodigo:
-                            novaTurma.codigo,
-
-                        [`turmasVinculadas/${turmaId}`]:
-                            true
-
-                    }
-                );
-
-                definirTurmaAtual(
-                    novaTurma
-                );
-
-                window.senaiTurmaAtualId =
-                    turmaId;
-
-                limparFormularioCriarTurma();
-
-                if (criarTurmaModal) {
-
-                    criarTurmaModal.style.display =
-                        'none';
-
-                }
-
-                alert(
-                    '✅ Turma criada com sucesso!'
-                );
-
-                await renderTurmasPagina();
-
-                atualizarTurmaInterface();
-
-            } catch (error) {
-
-                console.error(
-                    'Erro criando turma:',
-                    error
-                );
-
-                alert(
-                    '❌ Erro ao criar turma:\n' +
-                    error.message
-                );
-
-            } finally {
-
-                if (btn) {
-
-                    btn.disabled =
-                        false;
-
-                    btn.innerHTML =
-                        '<i class="fas fa-plus"></i> Criar turma';
-
-                }
-
-            }
-
-        }
-    );
+document.getElementById('btnSalvarNovaTurma')?.addEventListener('click', async () => {
+    if (criandoTurma) return;
+    if (!currentUser || currentUserRole !== 'professor') {
+        alert('⚠️ Somente professores podem criar turmas.');
+        return;
+    }
+    const nome = document.getElementById('novaTurmaNome')?.value.trim() || '';
+    if (!nome) {
+        alert('⚠️ Informe o nome da turma.');
+        return;
+    }
+    const descricao = document.getElementById('novaTurmaDescricao')?.value.trim() || '';
+    const professores = Array.from(document.querySelectorAll(
+        '#turmaProfessoresCheckboxes .turma-professor-check:checked'
+    )).map(checkbox => ({
+        uid: checkbox.dataset.uid || '',
+        nome: checkbox.dataset.nome || checkbox.value || 'Professor',
+        email: checkbox.dataset.email || ''
+    }));
+    const professorPrincipal = { uid: currentUser.uid, nome: obterNomeUsuario(), email: currentUser.email };
+    const btn = document.getElementById('btnSalvarNovaTurma');
+    criandoTurma = true;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
+    try {
+        const resultado = await criarTurma({ nome, descricao, professores, professorPrincipal });
+        if (!resultado.success) throw new Error(resultado.error);
+        if (currentUser?.uid !== professorPrincipal.uid) return;
+        const acesso = await acessarTurmaDoProfessor(resultado.turma.id);
+        if (!acesso.success) throw new Error('Turma criada, mas ' + acesso.error);
+        if (currentUser?.uid !== professorPrincipal.uid) return;
+        definirTurmaAtual(acesso.turma);
+        limparFormularioCriarTurma();
+        if (criarTurmaModal) criarTurmaModal.style.display = 'none';
+        alert('✅ Turma criada com sucesso!');
+        await renderTurmasPagina();
+        atualizarTurmaInterface();
+    } catch (error) {
+        console.error('Erro criando turma:', error);
+        alert('❌ Erro ao criar turma:\n' + error.message);
+    } finally {
+        criandoTurma = false;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plus"></i> Criar turma';
+    }
+});
 
 
 // ============================================================
@@ -3352,14 +2217,6 @@ function garantirAbaTurmasProfessor() {
             section
         );
 
-        section
-            .querySelector(
-                '#btnCriarTurmaPagina'
-            )
-            ?.addEventListener(
-                'click',
-                abrirCriarTurmaModal
-            );
 
     }
 
@@ -3384,27 +2241,6 @@ function garantirAbaTurmasProfessor() {
                 renderTurmasPagina();
 
             }
-        );
-
-    }
-
-    const botaoCriar =
-        document.getElementById(
-            'btnCriarTurmaPagina'
-        );
-
-    if (
-        botaoCriar &&
-        botaoCriar.dataset.listenerCriar !==
-            'true'
-    ) {
-
-        botaoCriar.dataset.listenerCriar =
-            'true';
-
-        botaoCriar.addEventListener(
-            'click',
-            abrirCriarTurmaModal
         );
 
     }
@@ -3557,6 +2393,14 @@ async function renderTurmasPagina() {
                                             )}
                                         </small>
 
+                                        ${String(turma.codigo ?? '') ? `
+                                            <button type="button" class="codigo-turma-botao"
+                                                data-codigo-turma="card" data-turma-id="${escapeHtml(turma.id)}"
+                                                aria-haspopup="dialog" aria-controls="modalCodigoTurma">
+                                                Código: ${escapeHtml(String(turma.codigo))}
+                                            </button>
+                                        ` : ''}
+
                                     </div>
 
                                 </div>
@@ -3657,16 +2501,7 @@ async function renderTurmasPagina() {
 
                             }
 
-                            turmaSelecionada =
-                                turma;
-
-                            mostrarGate(
-                                'professor'
-                            );
-
-                            selecionarTurma(
-                                turma
-                            );
+                            abrirTurmaDoProfessor(turma.id);
 
                         }
                     );
@@ -4114,6 +2949,15 @@ async function prepararPosLogin(
     currentUserRole =
         roleFinal;
 
+    if (roleFinal === 'professor') {
+        definirTurmaAtual(null);
+        Object.assign(userExtraInfo, { turmaAtualId: null, turmaAtualNome: '', turmaAtualCodigo: '' });
+        for (const id of ['tabDashboard', 'tabMateriais', 'tabMoinho', 'tabHistorico', 'tabPerfil']) {
+            document.getElementById(id)?.replaceChildren();
+        }
+        atualizarTurmaInterface();
+    }
+
     try {
 
         setDashboardData(
@@ -4204,9 +3048,7 @@ async function prepararPosLogin(
             'aluno'
         ) {
 
-            mostrarGate(
-                'aluno'
-            );
+            await prepararTurmaDoAluno(user);
 
             return;
 
@@ -4429,8 +3271,11 @@ logoutBtn
 
 window.showTab =
     function (
-        tabName
+        tabName,
+        aberturaValidada = false
     ) {
+
+        if (processandoEntradaProfessor && !aberturaValidada) return;
 
         if (
             tabName ===
@@ -4916,7 +3761,7 @@ document.addEventListener(
 
         const btn =
             event.target.closest(
-                '#btnVoltarTurma, #btnVoltarLoginTurma'
+                '#btnVoltarLoginTurma'
             );
 
         if (!btn) {
@@ -4966,6 +3811,7 @@ localStorage.setItem(
 // ============================================================
 
 function fecharTodosModais() {
+    fecharModalCodigoTurma();
 
     [
 
@@ -5350,55 +4196,7 @@ onAuthStateChange(
                 // Restaurar turma salva localmente
                 // --------------------------------------------
 
-                const turmaSalva =
-                    localStorage.getItem(
-                        'turmaAtual'
-                    );
-
-                if (
-                    turmaSalva &&
-                    !currentTurma
-                ) {
-
-                    try {
-
-                        const turmaParseada =
-                            JSON.parse(
-                                turmaSalva
-                            );
-
-                        if (
-                            turmaParseada?.id
-                        ) {
-
-                            currentTurma =
-                                turmaParseada;
-
-                            turmaSelecionada =
-                                turmaParseada;
-
-                            window.senaiTurmaAtualId =
-                                String(
-                                    turmaParseada.id
-                                );
-
-                        }
-
-                    } catch (error) {
-
-                        console.warn(
-                            '⚠️ Não foi possível restaurar a turma salva:',
-                            error
-                        );
-
-                    }
-
-                }
-
-                // --------------------------------------------
-                // Preparar sessão
-                // --------------------------------------------
-
+                // Professor volta para Minhas Turmas; cache não autoriza acesso.
                 await prepararPosLogin(
                     state.user,
                     currentUserRole

@@ -319,13 +319,36 @@
      PAINEL DE SELEÇÃO DA TURMA
 ========================================================= -->
 
-<div
-    id="turmaGate"
-    class="turma-gate"
-    style="display:none;">
+<div id="turmaGate" class="turma-gate" style="display:none;"></div>
 
-
+<!-- O gate usa estes templates tanto na abertura quanto na recuperação do DOM. -->
+<template id="turmaGateAlunoTemplate">
     <div class="turma-gate-card">
+        <div class="turma-gate-header">
+            <div class="turma-gate-icon"><i class="fas fa-users"></i></div>
+            <div>
+                <span class="turma-gate-label">ACESSO À TURMA</span>
+                <h2>Entre na sua turma</h2>
+                <p>Digite o código fornecido pelo seu professor.</p>
+            </div>
+        </div>
+        <div class="turma-code-input">
+            <label for="codigoTurmaEntrada"><i class="fas fa-key"></i> Código da turma</label>
+            <input type="text" id="codigoTurmaEntrada"
+                placeholder="Digite o código da turma" autocomplete="off">
+        </div>
+        <p id="turmaAlunoMensagem" role="status" aria-live="polite"></p>
+        <button type="button" id="btnEntrarTurma" class="btn-turma-entrar">
+            <i class="fas fa-right-to-bracket"></i> Entrar na turma
+        </button>
+        <button type="button" id="btnVoltarLoginTurma" class="btn-turma-voltar">
+            <i class="fas fa-right-from-bracket"></i> Sair
+        </button>
+    </div>
+</template>
+
+<template id="turmaGateProfessorTemplate">
+<div class="turma-gate-card">
 
 
         <!-- =================================================
@@ -490,32 +513,6 @@
              CÓDIGO
         ================================================== -->
 
-        <div
-            class="turma-code-input">
-
-
-            <label>
-
-                <i
-                    class="fas fa-key">
-                </i>
-
-                Digite o código da turma
-
-            </label>
-
-
-            <input
-                type="text"
-                id="codigoTurmaEntrada"
-                placeholder="Digite o código mostrado acima"
-                autocomplete="off"
-                maxlength="30">
-
-
-        </div>
-
-
         <!-- =================================================
              ENTRAR
         ================================================== -->
@@ -578,8 +575,7 @@
 
 
     </div>
-
-</div>
+</template>
 
 
 <!-- =========================================================
@@ -1688,62 +1684,6 @@
             </div>
 
 
-            <!-- CÓDIGO -->
-
-            <div
-                class="form-group">
-
-
-                <label>
-
-                    <i
-                        class="fas fa-key">
-                    </i>
-
-                    Código de acesso
-
-                </label>
-
-
-                <input
-                    type="text"
-                    id="novaTurmaCodigo"
-                    placeholder="Ex.: SENAI2026"
-                    maxlength="30"
-                    autocomplete="off">
-
-
-            </div>
-
-
-            <!-- CONFIRMAR CÓDIGO -->
-
-            <div
-                class="form-group">
-
-
-                <label>
-
-                    <i
-                        class="fas fa-shield-halved">
-                    </i>
-
-                    Confirmar código
-
-                </label>
-
-
-                <input
-                    type="text"
-                    id="novaTurmaCodigoConfirmar"
-                    placeholder="Digite o código novamente"
-                    maxlength="30"
-                    autocomplete="off">
-
-
-            </div>
-
-
             <!-- DESCRIÇÃO -->
 
             <div
@@ -2006,227 +1946,81 @@
         </div>
 
 
-        <div
-            id="cadastrarAlunoBody">
+        <div id="cadastrarAlunoBody">
 
-
-            <!-- EMAIL -->
-
-            <div
-                class="form-group">
-
-
-                <label>
-
-                    <i
-                        class="fas fa-envelope">
-                    </i>
-
-                    Email
-
+            <div class="form-group">
+                <label for="novoAlunoNome">
+                    <i class="fas fa-user"></i>
+                    Nome completo
                 </label>
+                <input
+                    type="text"
+                    id="novoAlunoNome"
+                    autocomplete="name"
+                    placeholder="Seu nome completo">
+            </div>
 
-
+            <div class="form-group">
+                <label for="novoAlunoEmail">
+                    <i class="fas fa-envelope"></i>
+                    E-mail
+                </label>
                 <input
                     type="email"
                     id="novoAlunoEmail"
+                    autocomplete="email"
                     placeholder="aluno@email.com">
-
-
             </div>
 
-
-            <!-- SENHA -->
-
-            <div
-                class="form-group">
-
-
-                <label>
-
-                    <i
-                        class="fas fa-lock">
-                    </i>
-
+            <div class="form-group">
+                <label for="novoAlunoSenha">
+                    <i class="fas fa-lock"></i>
                     Senha
-
                 </label>
-
-
                 <input
                     type="password"
                     id="novoAlunoSenha"
+                    autocomplete="new-password"
                     placeholder="Mínimo 6 caracteres">
-
-
             </div>
 
+            <div class="form-group">
+                <label for="novoAlunoConfirmarSenha">
+                    <i class="fas fa-lock"></i>
+                    Confirmar senha
+                </label>
+                <input
+                    type="password"
+                    id="novoAlunoConfirmarSenha"
+                    autocomplete="new-password"
+                    placeholder="Digite a senha novamente">
+            </div>
 
-            <!-- TURNO -->
-
-            <div
-                class="form-group">
-
-
-                <label>
-
-                    <i
-                        class="fas fa-clock">
-                    </i>
-
+            <div class="form-group">
+                <label for="novoAlunoTurno">
+                    <i class="fas fa-clock"></i>
                     Turno
-
                 </label>
-
-
-                <select
-                    id="novoAlunoTurno">
-
-
-                    <option
-                        value="Manhã">
-
-                        🌅 Manhã
-
-                    </option>
-
-
-                    <option
-                        value="Tarde">
-
-                        ☀️ Tarde
-
-                    </option>
-
-
-                    <option
-                        value="Noite">
-
-                        🌙 Noite
-
-                    </option>
-
-
+                <select id="novoAlunoTurno">
+                    <option value="Manhã">🌅 Manhã</option>
+                    <option value="Tarde">☀️ Tarde</option>
+                    <option value="Noite">🌙 Noite</option>
                 </select>
-
-
             </div>
-
-
-            <!-- PROFESSORES -->
-
-            <div
-                class="form-group">
-
-
-                <label>
-
-                    <i
-                        class="fas fa-chalkboard-user">
-                    </i>
-
-                    Professor(es) responsável(is)
-
-                </label>
-
-
-                <p
-                    class="turma-professores-help">
-
-                    Selecione os professores que estarão
-                    vinculados ao aluno.
-
-                </p>
-
-
-                <div
-                    id="professoresCheckboxes"
-                    class="checkbox-list">
-
-
-                    <div
-                        class="checkbox-loading">
-
-
-                        <i
-                            class="fas fa-spinner fa-spin">
-                        </i>
-
-
-                        Carregando professores...
-
-
-                    </div>
-
-
-                </div>
-
-
-            </div>
-
-
-            <!-- TURMA -->
-
-            <div
-                class="form-group">
-
-
-                <label>
-
-                    <i
-                        class="fas fa-users">
-                    </i>
-
-                    Turma
-
-                </label>
-
-
-                <select
-                    id="novoAlunoTurma">
-
-
-                    <option
-                        value="">
-
-                        Selecione a turma posteriormente
-
-                    </option>
-
-
-                </select>
-
-
-                <small
-                    class="form-help">
-
-                    Após fazer login, o aluno poderá selecionar
-                    uma das turmas vinculadas aos professores escolhidos.
-
-                </small>
-
-
-            </div>
-
-
-            <!-- CADASTRAR -->
 
             <button
                 type="button"
                 id="btnCadastrarNovoAluno"
                 class="btn-primary full-width">
-
-
-                <i
-                    class="fas fa-user-plus">
-                </i>
-
-
+                <i class="fas fa-user-plus"></i>
                 Cadastrar
-
-
             </button>
 
+            <button
+                type="button"
+                class="btn-cancel full-width close-cadastrar-aluno">
+                Cancelar
+            </button>
 
         </div>
 
@@ -2691,13 +2485,13 @@
     "imports": {
 
         "firebase/app":
-            "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+            "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js",
 
         "firebase/auth":
-            "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+            "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js",
 
         "firebase/database":
-            "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"
+            "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js"
 
     }
 }
@@ -2768,6 +2562,21 @@ document
 
 </script>
 
+
+<dialog id="modalCodigoTurma" class="modal-codigo-turma"
+    role="dialog" aria-modal="true" aria-labelledby="modalCodigoTurmaTitulo"
+    aria-describedby="modalCodigoTurmaInstrucao">
+    <div class="modal-codigo-turma__conteudo">
+        <button type="button" id="fecharModalCodigoTurma" class="modal-codigo-turma__fechar"
+            aria-label="Fechar código da turma" autofocus>×</button>
+        <h2 id="modalCodigoTurmaTitulo">Código da turma</h2>
+        <p id="modalCodigoTurmaNome" class="modal-codigo-turma__nome"></p>
+        <p id="modalCodigoTurmaValor" class="modal-codigo-turma__codigo"></p>
+        <p id="modalCodigoTurmaInstrucao" class="modal-codigo-turma__instrucao">
+            Informe este código aos alunos para que eles possam entrar na turma.
+        </p>
+    </div>
+</dialog>
 
 </body>
 

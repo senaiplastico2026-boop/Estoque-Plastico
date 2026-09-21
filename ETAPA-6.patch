@@ -1,0 +1,293 @@
+--- a/app.js
++++ b/app.js
+@@ -1663,6 +1663,7 @@
+ // ============================================================
+ 
+ function atualizarTurmaInterface() {
++    fecharModalCodigoTurma();
+ 
+     const nome =
+         document.getElementById(
+@@ -1684,13 +1685,79 @@
+ 
+     if (codigo) {
+ 
+-        codigo.textContent =
+-            currentTurma?.codigo ||
+-            '------';
++        const valor = String(currentTurma?.codigo ?? '');
++        codigo.textContent = valor || '------';
++        if (currentUserRole === 'professor' && valor) {
++            const botao = document.createElement('button');
++            botao.type = 'button';
++            botao.className = 'codigo-turma-botao';
++            botao.dataset.codigoTurma = 'atual';
++            botao.setAttribute('aria-haspopup', 'dialog');
++            botao.setAttribute('aria-controls', 'modalCodigoTurma');
++            botao.setAttribute('aria-label', 'Exibir código da turma: ' + valor);
++            botao.textContent = valor;
++            codigo.replaceChildren(botao);
++        }
+ 
+     }
+ 
+ }
++
++
++// Visualização apenas: não seleciona turma nem consulta/persiste dados.
++let origemModalCodigoTurma = null;
++
++function abrirModalCodigoTurma(codigo, nomeTurma = '', origem = document.activeElement) {
++    if (!currentUser || currentUserRole !== 'professor') return;
++    const valor = String(codigo ?? '');
++    if (!valor.trim()) return;
++    const modal = document.getElementById('modalCodigoTurma');
++    if (!modal) return;
++    document.getElementById('modalCodigoTurmaValor').textContent = valor;
++    const nome = document.getElementById('modalCodigoTurmaNome');
++    nome.textContent = String(nomeTurma ?? '');
++    nome.hidden = !nome.textContent;
++    if (!modal.open) {
++        origemModalCodigoTurma = origem;
++        modal.showModal();
++    }
++    document.body.classList.add('codigo-turma-modal-aberto');
++    document.getElementById('fecharModalCodigoTurma').focus();
++}
++
++function fecharModalCodigoTurma() {
++    const modal = document.getElementById('modalCodigoTurma');
++    if (modal?.open) modal.close();
++}
++
++function tratarCliqueCodigoTurma(event) {
++    const botao = event.target.closest('.codigo-turma-botao');
++    if (!botao || !currentUser || currentUserRole !== 'professor') return;
++    // Cabeçalho/perfil leem o contexto atual no clique; cards usam seu próprio objeto.
++    const turma = botao.dataset.codigoTurma === 'card'
++        ? turmasDisponiveis.find(item => String(item.id) === botao.dataset.turmaId)
++        : currentTurma;
++    if (!turma) return;
++    abrirModalCodigoTurma(turma.codigo, turma.nome, botao);
++}
++
++// Registrados uma vez, fora da abertura e das renderizações.
++document.addEventListener('click', tratarCliqueCodigoTurma);
++document.getElementById('fecharModalCodigoTurma')?.addEventListener('click', fecharModalCodigoTurma);
++document.getElementById('modalCodigoTurma')?.addEventListener('click', event => {
++    if (event.target !== event.currentTarget) return;
++    const caixa = event.currentTarget.getBoundingClientRect();
++    if (event.clientX < caixa.left || event.clientX > caixa.right ||
++        event.clientY < caixa.top || event.clientY > caixa.bottom) fecharModalCodigoTurma();
++});
++document.getElementById('modalCodigoTurma')?.addEventListener('close', event => {
++    if (event.currentTarget.open) return;
++    document.body.classList.remove('codigo-turma-modal-aberto');
++    document.getElementById('modalCodigoTurmaValor').textContent = '';
++    document.getElementById('modalCodigoTurmaNome').textContent = '';
++    if (origemModalCodigoTurma?.isConnected) origemModalCodigoTurma.focus();
++    origemModalCodigoTurma = null;
++});
+ 
+ 
+ // ============================================================
+@@ -2326,6 +2393,14 @@
+                                             )}
+                                         </small>
+ 
++                                        ${String(turma.codigo ?? '') ? `
++                                            <button type="button" class="codigo-turma-botao"
++                                                data-codigo-turma="card" data-turma-id="${escapeHtml(turma.id)}"
++                                                aria-haspopup="dialog" aria-controls="modalCodigoTurma">
++                                                Código: ${escapeHtml(String(turma.codigo))}
++                                            </button>
++                                        ` : ''}
++
+                                     </div>
+ 
+                                 </div>
+@@ -3736,6 +3811,7 @@
+ // ============================================================
+ 
+ function fecharTodosModais() {
++    fecharModalCodigoTurma();
+ 
+     [
+ 
+--- a/index.html
++++ b/index.html
+@@ -2563,6 +2563,21 @@
+ </script>
+ 
+ 
++<dialog id="modalCodigoTurma" class="modal-codigo-turma"
++    role="dialog" aria-modal="true" aria-labelledby="modalCodigoTurmaTitulo"
++    aria-describedby="modalCodigoTurmaInstrucao">
++    <div class="modal-codigo-turma__conteudo">
++        <button type="button" id="fecharModalCodigoTurma" class="modal-codigo-turma__fechar"
++            aria-label="Fechar código da turma" autofocus>×</button>
++        <h2 id="modalCodigoTurmaTitulo">Código da turma</h2>
++        <p id="modalCodigoTurmaNome" class="modal-codigo-turma__nome"></p>
++        <p id="modalCodigoTurmaValor" class="modal-codigo-turma__codigo"></p>
++        <p id="modalCodigoTurmaInstrucao" class="modal-codigo-turma__instrucao">
++            Informe este código aos alunos para que eles possam entrar na turma.
++        </p>
++    </div>
++</dialog>
++
+ </body>
+ 
+ </html>
+\ No newline at end of file
+--- a/style.css
++++ b/style.css
+@@ -6181,4 +6181,113 @@
+ 
+ /* =========================================================
+    FIM
+-========================================================= */
+\ No newline at end of file
++========================================================= */
++
++/* Código da turma: um diálogo compartilhado pelas interfaces do professor. */
++.codigo-turma-botao {
++    border: 0;
++    border-radius: 4px;
++    padding: 2px 4px;
++    background: transparent;
++    color: #60a5fa;
++    font: inherit;
++    letter-spacing: inherit;
++    overflow-wrap: anywhere;
++    max-width: 100%;
++}
++
++.codigo-turma-botao:hover {
++    background: #172337;
++    text-decoration: underline;
++    text-underline-offset: 3px;
++}
++
++.codigo-turma-botao:focus-visible,
++.modal-codigo-turma__fechar:focus-visible {
++    outline: 2px solid #93c5fd;
++    outline-offset: 3px;
++}
++
++.turma-page-info > .codigo-turma-botao {
++    align-self: flex-start;
++    font-size: 12px;
++    font-weight: 700;
++}
++
++body.codigo-turma-modal-aberto {
++    overflow: hidden;
++}
++
++.modal-codigo-turma {
++    position: fixed;
++    inset: 0;
++    margin: auto;
++    padding: 0;
++    width: min(960px, calc(100vw - 32px));
++    max-width: calc(100vw - 32px);
++    max-height: calc(100dvh - 32px);
++    border: 1px solid #293746;
++    border-radius: 16px;
++    background: #141b23;
++    color: #e2e8f0;
++    box-shadow: 0 20px 50px rgba(0, 0, 0, .4);
++    overflow: auto;
++}
++
++.modal-codigo-turma::backdrop {
++    background: rgba(3, 7, 12, .82);
++}
++
++.modal-codigo-turma__conteudo {
++    position: relative;
++    padding: 64px clamp(12px, 4vw, 48px) 40px;
++    text-align: center;
++}
++
++.modal-codigo-turma__fechar {
++    position: absolute;
++    top: 12px;
++    right: 12px;
++    width: 44px;
++    height: 44px;
++    border: 1px solid #344555;
++    border-radius: 8px;
++    background: #172337;
++    color: #e2e8f0;
++    font-size: 28px;
++}
++
++.modal-codigo-turma__fechar:hover {
++    background: #263e59;
++}
++
++.modal-codigo-turma h2 {
++    font-size: clamp(18px, 3vw, 26px);
++}
++
++.modal-codigo-turma__nome {
++    margin-top: 12px;
++    color: #94a3b8;
++    font-size: 18px;
++    overflow-wrap: anywhere;
++}
++
++.modal-codigo-turma__codigo {
++    margin: 24px 0;
++    color: #f1f5f9;
++    font-family: ui-monospace, Consolas, monospace;
++    font-size: clamp(36px, 11vw, 140px);
++    font-weight: 800;
++    font-variant-numeric: tabular-nums;
++    line-height: 1.15;
++    letter-spacing: .025em;
++    white-space: pre-wrap;
++    overflow-wrap: anywhere;
++}
++
++.modal-codigo-turma__instrucao {
++    color: #cbd5e1;
++    line-height: 1.6;
++    max-width: 48ch;
++    margin: auto;
++}
+--- a/models/meuperfil.js
++++ b/models/meuperfil.js
+@@ -704,9 +704,11 @@
+ 
+                             <strong>
+ 
+-                                ${escapeHTML(
+-                                    turmaCodigo
+-                                )}
++                                ${currentUserRole === 'professor' && turmaAtual?.id && turmaCodigo !== '------'
++                                    ? `<button type="button" class="codigo-turma-botao" data-codigo-turma="atual"
++                                        aria-haspopup="dialog" aria-controls="modalCodigoTurma"
++                                        aria-label="Exibir código da turma: ${escapeHTML(turmaCodigo)}">${escapeHTML(turmaCodigo)}</button>`
++                                    : escapeHTML(turmaCodigo)}
+ 
+                             </strong>
+ 
+--- a/models/professor.js
++++ b/models/professor.js
+@@ -469,9 +469,11 @@
+ 
+                         <strong>
+ 
+-                            ${escapeHTML(
+-                                turmaCodigo
+-                            )}
++                            ${userExtraInfo?.role === 'professor' && turmaAtual?.id && turmaCodigo !== '------'
++                                ? `<button type="button" class="codigo-turma-botao" data-codigo-turma="atual"
++                                    aria-haspopup="dialog" aria-controls="modalCodigoTurma"
++                                    aria-label="Exibir código da turma: ${escapeHTML(turmaCodigo)}">${escapeHTML(turmaCodigo)}</button>`
++                                : escapeHTML(turmaCodigo)}
+ 
+                         </strong>
+ 
