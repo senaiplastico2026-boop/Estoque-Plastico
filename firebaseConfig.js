@@ -22,12 +22,13 @@ import {
 // ============================================================
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCxHASP9HqVm8xVIHLNKQFPGA1k43KHnek",
-  authDomain: "projplastico.firebaseapp.com",
-  projectId: "projplastico",
-  storageBucket: "projplastico.firebasestorage.app",
-  messagingSenderId: "952615990630",
-  appId: "1:952615990630:web:7523754524bfe0cdff44a7"
+  apiKey: "AIzaSyAdxRMIbI8NF61r_0LxJpnZPR4lYq-ec4w",
+  authDomain: "teste-estoque-32873.firebaseapp.com",
+  databaseURL: "https://teste-estoque-32873-default-rtdb.firebaseio.com",
+  projectId: "teste-estoque-32873",
+  storageBucket: "teste-estoque-32873.firebasestorage.app",
+  messagingSenderId: "607433747482",
+  appId: "1:607433747482:web:196f46c30592fd5190b5a3"
 };
 
 // ============================================================
